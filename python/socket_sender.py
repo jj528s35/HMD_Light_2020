@@ -40,7 +40,21 @@ def send(string):
         else:
             sock.sendall(string.encode())
 
-if(__name__ == '__main__'):
-    create_socket()
-    send('0 hello world')
-    close_socket()
+def receive():
+    global sock, sock_state
+    if(sock_state != -1):
+        if sock is None:
+            create_socket()
+        else:
+            sock.settimeout(0.0)
+            try:
+                data = sock.recv(100).decode('utf8')
+                return data
+            except:
+                pass 
+
+            
+# if(__name__ == '__main__'):
+#     create_socket()
+#     send('0 hello world')
+#     close_socket()

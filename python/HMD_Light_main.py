@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import cv2
 import random
 import math
+import socket_sender
 
 try:
     import roypycy
@@ -24,6 +25,8 @@ except ImportError:
     print("Pico Flexx backend requirements (roypycy) not installed properly")
     raise
 
+
+# # RANSAM
 
 # In[2]:
 
@@ -124,9 +127,72 @@ def RANSAM(points3D, ransac_iteration = 1000, inliner_threshold = 0.01):
             best_depthImage = depthImage
             best_sampts = sampts
             
-    print("Inliner Number\n", best_inlinernum)
-    print("Inliner plane\n", best_plane)
+    #print("Inliner Number\n", best_inlinernum)
+    #print("Inliner plane\n", best_plane)
     return best_plane, best_depthImage, best_plane_mask, best_sampts
+
+
+# # Draw 3D plane
+
+# In[3]:
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+def show_plane(plane_eq):
+    a,b,c,d = plane_eq[0], plane_eq[1], plane_eq[2], plane_eq[3]
+    x = np.linspace(-1,1,10)
+    y = np.linspace(-1,1,10)
+
+    X,Y = np.meshgrid(x,y)
+    Z = (d - a*X - b*Y) / c
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    surf = ax.plot_surface(X, Y, Z)
+
+
+# # Tranform Data
+
+# In[10]:
+
+
+def send_plane_eq(plane_eq):
+    data = ""
+    temp = ['1 ']
+    temp.append("%lf %lf %lf %lf"%(plane_eq[0], plane_eq[1], plane_eq[2], plane_eq[3]))
+    data = data.join(temp)
+    print('send plane_eq:', data)
+    socket_sender.send(data)
+    
+def send_sample_points(sample_points):
+    data = ""
+    temp = ['2 ']
+    for i in range(3): 
+        temp.append("%f %f %f "%(sample_points[i][0], sample_points[i][1], sample_points[i][2]))
+    data = data.join(temp)
+    print('send sample point:', data)
+    socket_sender.send(data)
+    
+
+def receive_data(cam):
+    data = socket_sender.receive()
+    if(data != None):
+        print("receive " + data)
+        ParseData(data, cam)
+        
+def ParseData(data, cam):
+    # split the string at ' '
+    msg = data.split(' ')
+    # get the first slice of the list
+    data_type = int(msg[0])
+    
+    if(data_type == 1):# change user case
+        fps = int(msg[1])
+        change_user_case(fps,cam)
 
 
 # In[ ]:
@@ -134,6 +200,22 @@ def RANSAM(points3D, ransac_iteration = 1000, inliner_threshold = 0.01):
 
 
 
+
+# In[ ]:
+
+
+
+
+
+# In[5]:
+
+
+def change_user_case(fps,cam):
+    cam.setUseCase('MODE_9_5FPS_2000')
+    print("UseCase",cam.getCurrentUseCase())
+
+
+# # Main
 
 # In[26]:
 
@@ -173,7 +255,8 @@ class MyListener(roypy.IDepthDataListener):
             self.yqueue.put(q_y)
             q_z = zarray.reshape (-1, data.width)        
             self.zqueue.put(q_z)
-            print('store time:', (time.time()-t_time))
+            
+            #print('store time:', (time.time()-t_time))
 
     def paint (self, data, name):
         """Called in the main thread, with data containing one of the items that was added to the
@@ -188,46 +271,53 @@ def main ():
     parser = argparse.ArgumentParser (usage = __doc__)
     add_camera_opener_options (parser)
     parser.add_argument ("--seconds", type=int, default=15, help="duration to capture data")
+    timer_show = False
     
     Replay = False
     if(Replay == True):
         options = parser.parse_args(args=['--rrf', '0108.rrf','--seconds', '5'])
     else:
-        options = parser.parse_args(args=['--seconds', '25'])
+        options = parser.parse_args(args=['--seconds', '10'])
 
     opener = CameraOpener (options)
     cam = opener.open_camera ()
     
     if(Replay == False):
         cam.setUseCase('MODE_5_35FPS_600')#MODE_9_5FPS_2000 MODE_5_45FPS_500
-    
-    
 
+    #Print camera information
     print_camera_info (cam)
     print("isConnected", cam.isConnected())
     print("getFrameRate", cam.getFrameRate())
     print("UseCase",cam.getCurrentUseCase())
 
     # we will use this queue to synchronize the callback with the main
-    # thread, as drawing should happen in the main thread
-    
+    # thread, as drawing should happen in the main thread 
     x = queue.LifoQueue()
     y = queue.LifoQueue()
     z = queue.LifoQueue()
     l = MyListener(x,y,z)
     cam.registerDataListener(l)
     cam.startCapture()
+    
     # create a loop that will run for a time (default 15 seconds)
-    process_event_queue (x,y,z, l, options.seconds)
+    process_event_queue (x, y, z, l, options.seconds, cam)
     cam.stopCapture()
+    socket_sender.close_socket()
     
     cv2.destroyAllWindows()
     
 
-def process_event_queue (x,y,z, painter, seconds):
+def process_event_queue (x,y,z, painter, seconds, cam):
+    show_3d_plane_img = False 
+    
     # create a loop that will run for the given amount of time
-    t_end = time.time() + seconds
-    while time.time() < t_end:
+#     t_end = time.time() + seconds
+#     while time.time() < t_end:
+        
+    key = ''
+    print("  Quit : Q\n")
+    while 1 :
         try:
             # try to retrieve an item from the queue.
             # this will block until an item can be retrieved
@@ -238,29 +328,71 @@ def process_event_queue (x,y,z, painter, seconds):
             item_y = y.get(True, 0.5)
             item_z = z.get(True, 0.5)
             points3D = np.dstack((item_x,item_y,item_z))
-            print('queue time:', (time.time()-t_time))
+            #print('queue time:', (time.time()-t_time))
         except queue.Empty:
             # this will be thrown when the timeout is hit
             break
         else:
-            painter.paint (item_z, 'Depth')
+            
             t_time = time.time()
 #             surface_plane, depthImg, plane_mask, best_sampts = RANSAM(points3D, ConfidenceIndex, ransac_iteration = 500, inliner_threshold = 0.003)
-            surface_plane, depthImg, plane_mask, best_sampts = RANSAM(points3D, ransac_iteration = 50, inliner_threshold = 0.003)
-            print('Ransam time:', (time.time()-t_time))
+            surface_plane, depthImg, plane_mask, best_sampts = RANSAM(points3D, ransac_iteration = 50, inliner_threshold = 0.01)#1cm  0.003
+#             print('Ransam time:', (time.time()-t_time))
+        
+            #show image
+            painter.paint (item_z, 'Depth')
             painter.paint (plane_mask.astype(np.uint8)*255, 'plane')
-            print(best_sampts)
+            if(show_3d_plane_img):
+                show_plane(surface_plane)
+            
+            #Send surface_plane and best_sampts
+            send_plane_eq(surface_plane)
+            send_sample_points(best_sampts)
+            
+            receive_data(cam)
+            
+                
+                
+        if(cv2.waitKey(1) & 0xFF == 113):
+            break
 
 
-# In[27]:
-
+# In[ ]:
 
 
 main()
 
 
-# In[5]:
+# In[15]:
 
 
-get_ipython().system('jupyter nbconvert --to script main.ipynb')
+socket_sender.close_socket()
+
+
+# In[8]:
+
+
+get_ipython().system('jupyter nbconvert --to script HMD_Light_main.ipynb')
+
+
+# In[9]:
+
+
+# import socket_sender
+# socket_sender.send('0 hello world')
+# data = socket_sender.receive()
+# print(data)
+# socket_sender.close_socket()
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
