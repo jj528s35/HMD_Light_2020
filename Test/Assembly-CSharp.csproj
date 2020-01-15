@@ -53,10 +53,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\c#\plane_pos_rot.cs" />
+     <Compile Include="Assets\c#\socket_receive.cs" />
      <Compile Include="Assets\sampleDotNetRetrieveData\fless_test.cs" />
      <Compile Include="Assets\sampleDotNetRetrieveData\Program.cs" />
      <Compile Include="Assets\sampleDotNetRetrieveData\Properties\AssemblyInfo.cs" />
-     <Compile Include="Assets\Scenes\socket_receive.cs" />
      <None Include="Assets\sampleDotNetRetrieveData\CMakeLists.txt" />
  <Reference Include="Unity.TextMeshPro.Editor">
  <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
