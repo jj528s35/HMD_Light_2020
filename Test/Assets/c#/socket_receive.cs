@@ -19,6 +19,7 @@ public class socket_receive : MonoBehaviour
     public float[] plane_equation = new float[4];
     public Vector3[] sample_points = new Vector3[3];
     public Vector3[] plane_points = new Vector3[4];
+    public int plane_points_num = 4;
     public Vector3 plane_center;
 
     [Header("socket send")]
@@ -118,7 +119,7 @@ public class socket_receive : MonoBehaviour
             else
             {
                 Debug.LogFormat("reveice plane equation, data length: {0}", values.Length);
-                Debug.LogFormat("plane equation format is wrong: {0}", data);
+                //Debug.LogFormat("plane equation format is wrong: {0}", data);
             }
         }
         else if(dataType == (int) ReceiveType.sample_points_type)
@@ -140,13 +141,13 @@ public class socket_receive : MonoBehaviour
             else
             {
                 Debug.LogFormat("reveice sample_points, data length: {0}", values.Length);
-                Debug.LogFormat("sample_points format is wrong: {0}", data);
+                //Debug.LogFormat("sample_points format is wrong: {0}", data);
             }
         }
         else if(dataType == (int) ReceiveType.plane_points_type)
         {
             //Debug.LogFormat("reveice touch state, data length: {0}", values.Length);
-            int plane_points_num = int.Parse(values[1]);
+            plane_points_num = int.Parse(values[1]);
             
             if ((values.Length-3) == plane_points_num*3)
             {
@@ -162,13 +163,13 @@ public class socket_receive : MonoBehaviour
             else
             {
                 Debug.LogFormat("reveice plane_points, data length: {0}", values.Length);
-                Debug.LogFormat("plane_points format is wrong: {0}", data);
+                //Debug.LogFormat("plane_points format is wrong: {0}", data);
             }
         }
         else if(dataType == (int)ReceiveType.plane_center_type)
         {
-            int plane_eq_num = 3;
-            if (values.Length == plane_eq_num + 1)
+            int center_num = 3;
+            if (values.Length == center_num + 1)
             {
                 float a= float.Parse(values[1]);
                 float b = float.Parse(values[2]);
@@ -178,7 +179,7 @@ public class socket_receive : MonoBehaviour
             else
             {
                 Debug.LogFormat("reveice plane_center, data length: {0}", values.Length);
-                Debug.LogFormat("plane_center format is wrong: {0}", data);
+                //Debug.LogFormat("plane_center format is wrong: {0}", data);
             }
         }
     }
