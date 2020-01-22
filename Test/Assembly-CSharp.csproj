@@ -275,6 +275,9 @@
  <Reference Include="UnityEngine.SpatialTracking">
  <HintPath>D:/unity2017/2018/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
  </Reference>
+ <Reference Include="RoyaleDotNet">
+ <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Assets/XXsampleDotNetRetrieveData/RoyaleDotNet.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEngine.Advertisements">
  <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Library/PackageCache/com.unity.ads@2.3.1/Runtime/UnityEngine.Advertisements.dll</HintPath>
  </Reference>
@@ -289,9 +292,6 @@
  </Reference>
  <Reference Include="Unity.Analytics.Tracker">
  <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Library/PackageCache/com.unity.analytics@3.2.2/Unity.Analytics.Tracker.dll</HintPath>
- </Reference>
- <Reference Include="RoyaleDotNet">
- <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Assets/XXsampleDotNetRetrieveData/RoyaleDotNet.dll</HintPath>
  </Reference>
  <Reference Include="netstandard">
  <HintPath>D:/unity2017/2018/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>
