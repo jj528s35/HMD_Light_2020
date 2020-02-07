@@ -55,6 +55,8 @@ public class plane_pos_rot : MonoBehaviour
         //重新设置UV，法线
         tMesh.RecalculateBounds();
         tMesh.RecalculateNormals();
+
+        //print(tMesh.normals[0]+" "+tMesh.normals[1]);
  
         //将绘制好的Mesh赋值
         GetComponent<MeshFilter>().mesh = tMesh;
