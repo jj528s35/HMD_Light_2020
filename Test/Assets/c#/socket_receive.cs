@@ -117,6 +117,9 @@ public class socket_receive : MonoBehaviour
                 float c = float.Parse(values[3]);
                 float d = float.Parse(values[4]);
                 plane_equation = new float[] { a, b, c, d };
+
+                //Test TCP time
+                //SendMessage("1 ");
             }
             else
             {

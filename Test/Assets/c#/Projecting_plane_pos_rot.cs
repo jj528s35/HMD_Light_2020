@@ -5,7 +5,6 @@ using UnityEngine;
 public class Projecting_plane_pos_rot : MonoBehaviour
 {
     public GameObject plane_;
-    public GameObject sphere;
     public Vector3 n_vector = Vector3.up;
     public Vector3 pos = Vector3.up;
     private socket_receive receive_data;
@@ -17,16 +16,16 @@ public class Projecting_plane_pos_rot : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         float[] eq = receive_data.plane_equation;
         pos = receive_data.targetpos;
         
         n_vector = new Vector3(eq[0], -eq[1], eq[2]);
+        if(n_vector[2] < 0) n_vector = n_vector * -1;
         //y * -1
         pos = new Vector3(pos[0], -pos[1], pos[2]);
         plane_.transform.up = n_vector*100;
         plane_.transform.position = pos;
-        //sphere.transform.position = n_vector*100;
     }
 }
