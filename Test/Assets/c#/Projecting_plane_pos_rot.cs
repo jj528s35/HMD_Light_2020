@@ -28,4 +28,5 @@ public class Projecting_plane_pos_rot : MonoBehaviour
         plane_.transform.up = n_vector*100;
         plane_.transform.position = pos;
     }
+
 }

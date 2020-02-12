@@ -14,6 +14,9 @@ public class Debug_camera_pos : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if(Input.GetKeyDown(KeyCode.Space))
+        {
+            print((cam1.transform.position - cam2.transform.position)*100 + "cm");
+        }
     }
 }

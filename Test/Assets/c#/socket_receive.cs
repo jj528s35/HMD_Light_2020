@@ -26,6 +26,9 @@ public class socket_receive : MonoBehaviour
     [Header("socket send")]
     public int fps = 45;
 
+    /*[Header("Projecting plane")]
+    public GameObject plane_;*/
+
     public enum ReceiveType
     {
         None,
@@ -46,6 +49,7 @@ public class socket_receive : MonoBehaviour
 
      void OnDiaable()
     {
+        SendMessage("2 stop!");
         tcpListenerThread.Abort();
         tcpListenerThread.Join();
     }
@@ -62,6 +66,11 @@ public class socket_receive : MonoBehaviour
         {
             int fps = 5;
             SendMessage("1 "+ fps);
+        }
+
+        if(Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            SendMessage("2 stop!");
         }
     }
 
@@ -118,6 +127,7 @@ public class socket_receive : MonoBehaviour
                 float d = float.Parse(values[4]);
                 plane_equation = new float[] { a, b, c, d };
 
+                //projecting_plane_rot(plane_equation);
                 //Test TCP time
                 //SendMessage("1 ");
             }
@@ -179,7 +189,7 @@ public class socket_receive : MonoBehaviour
                 float a= float.Parse(values[1]);
                 float b = float.Parse(values[2]);
                 float c = float.Parse(values[3]);
-                plane_center = new Vector3(a, b, c);
+                //plane_center = new Vector3(a, b, c);
             }
             else
             {
@@ -196,6 +206,8 @@ public class socket_receive : MonoBehaviour
                 float b = float.Parse(values[2]);
                 float c = float.Parse(values[3]);
                 targetpos = new Vector3(a, b, c);
+
+                //projecting_plane_pos(targetpos);
             }
             else
             {
@@ -227,5 +239,23 @@ public class socket_receive : MonoBehaviour
             Debug.Log(e.ToString());
         }
     }
+
+    /*Assign plane pos and rot
+    private void projecting_plane_pos(Vector3 _targetpos)
+    {
+        Vector3 pos = _targetpos;
+        //y * -1
+        pos = new Vector3(pos[0], -pos[1], pos[2]);
+        plane_.transform.position = pos;
+    }
+
+    private void projecting_plane_rot(float[] _eq)
+    {
+        Vector3 n_vector = new Vector3(_eq[0], -_eq[1], _eq[2]);
+        if(n_vector[2] < 0) n_vector = n_vector * -1;
+        
+        //y * -1
+        plane_.transform.up = n_vector*100;
+    }*/
 
 }
