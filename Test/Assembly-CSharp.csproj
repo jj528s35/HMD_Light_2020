@@ -58,6 +58,8 @@
      <Compile Include="Assets\c#\plane_pos_rot.cs" />
      <Compile Include="Assets\c#\Projecting_plane_pos_rot.cs" />
      <Compile Include="Assets\c#\socket_receive.cs" />
+     <Compile Include="Assets\c#\UI.cs" />
+     <Compile Include="Assets\c#\X\RGB_camera_set.cs" />
      <Compile Include="Assets\XXsampleDotNetRetrieveData\fless_test.cs" />
      <Compile Include="Assets\XXsampleDotNetRetrieveData\Program.cs" />
      <Compile Include="Assets\XXsampleDotNetRetrieveData\Properties\AssemblyInfo.cs" />

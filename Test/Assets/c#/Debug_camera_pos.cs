@@ -9,6 +9,7 @@ public class Debug_camera_pos : MonoBehaviour
     void Start()
     {
         print((cam1.transform.position - cam2.transform.position)*100 + "cm");
+        print(Vector3.Distance(cam1.transform.position,cam2.transform.position)*1000);
     }
 
     // Update is called once per frame

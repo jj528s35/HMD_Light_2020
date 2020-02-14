@@ -16,16 +16,11 @@ public class cameraSetup : MonoBehaviour
     {
         mainCamera = gameObject.GetComponent<Camera>();
         changeCameraParam();
-        //mainCamera.projectionMatrix = LoadProjectionMatrix(fx, fy, cx, cy);
-
-        //CreateIntrinsicGuess();
     }
 
     // Update is called once per frame
     void Update()
     {
-        //changeCameraParam();
-        //mainCamera.projectionMatrix = LoadProjectionMatrix(fx, fy, cx, cy);
     }
 
 
@@ -54,20 +49,22 @@ public class cameraSetup : MonoBehaviour
         //PlayerSettings.defaultScreenHeight = height;
  
         shiftX = -(cx - width / 2.0f) / width;
-        shiftY = (cy - height / 2.0f) / height;
+        shiftY = -(cy - height / 2.0f) / height;
  
         mainCamera.sensorSize = new Vector2(sizeX, sizeY);     // in mm, mx = 1000/x, my = 1000/y
         mainCamera.focalLength = f;                            // in mm, ax = f * mx, ay = f * my
         mainCamera.lensShift = new Vector2(shiftX, shiftY);    // W/2,H/w for (0,0), 1.0 shift in full W/H in image plane
 
-        mainCamera.focalLength = _f;     
+        mainCamera.focalLength = _f; 
+
+        mainCamera.lensShift = new Vector2(-0.005f, 0.165f);     
  
     }
 
-
+    
    
 
-
+/*
     private Matrix4x4 LoadProjectionMatrix(float fx, float fy, float cx, float cy)
     {
         // https://github.com/kylemcdonald/ofxCv/blob/88620c51198fc3992fdfb5c0404c37da5855e1e1/libs/ofxCv/src/Calibration.cpp
@@ -135,9 +132,9 @@ public class cameraSetup : MonoBehaviour
         intrinsics.IntrinsicMatrix[1, 2] = cy;
         intrinsics.IntrinsicMatrix[2, 2] = 1;
 
-        return intrinsics;*/
+        return intrinsics;
         print(_fy+" "+_fx+" "+_cx+" "+_cy);
-    }
+    }*/
 }
 
 //https://forum.unity.com/threads/how-to-use-opencv-camera-calibration-to-set-physical-camera-parameters.704120/

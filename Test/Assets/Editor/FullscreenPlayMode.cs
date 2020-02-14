@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace FullScreenPlayModes
 {
-    [InitializeOnLoad]
+    /*[InitializeOnLoad]
     public class FullScreenPlayMode : Editor
     {
         //The size of the toolbar above the game view, excluding the OS border.
@@ -31,13 +31,14 @@ namespace FullScreenPlayModes
                     case PlayModeStateChange.EnteredPlayMode:
 
                         int w = 1920;
-                        int _w = 240;
+                        int _w = 0;//240;
                         Rect newPos = new Rect(w, 0 - toolbarHeight, Screen.currentResolution.width - _w, Screen.currentResolution.height + toolbarHeight);
 
                         gameView.position = newPos;
-                        gameView.minSize = new Vector2(Screen.currentResolution.width - _w, Screen.currentResolution.height + toolbarHeight);
-                        gameView.maxSize = gameView.minSize;
-                        gameView.position = newPos;
+                        //gameView.minSize = new Vector2(Screen.currentResolution.width - _w, Screen.currentResolution.height + toolbarHeight);
+                        //gameView.maxSize = gameView.minSize;
+                        //gameView.position = newPos;
+                        
                         Debug.Log(gameView.position);
 
                         break;
@@ -74,5 +75,5 @@ namespace FullScreenPlayModes
         {
             return PlayerPrefs.GetInt("PlayMode_FullScreen", 0) == 1;
         }
-    }
+    }*/
 }
