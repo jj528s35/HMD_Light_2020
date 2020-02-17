@@ -18,6 +18,7 @@ public class socket_receive : MonoBehaviour
     [Header("socket receive")]
     public float[] plane_equation = new float[4];
     public Vector3 targetpos;
+    public Vector3 plane_forward_vector;
     public Vector3[] sample_points = new Vector3[3];
     public Vector3[] plane_points = new Vector3[4];
     public int plane_points_num = 4;
@@ -36,7 +37,8 @@ public class socket_receive : MonoBehaviour
         sample_points_type,
         plane_points_type,
         plane_center_type,
-        targetpos_type
+        targetpos_type,
+        plane_forward_Type
     };
     
     // Start is called before the first frame update
@@ -212,6 +214,23 @@ public class socket_receive : MonoBehaviour
             else
             {
                 Debug.LogFormat("reveice target_pos, data length: {0}", values.Length);
+                //Debug.LogFormat("plane_center format is wrong: {0}", data);
+            }
+        }
+        else if(dataType == (int)ReceiveType.plane_forward_Type)
+        {
+            int center_num = 3;
+            if (values.Length == center_num + 1)
+            {
+                float a= float.Parse(values[1]);
+                float b = float.Parse(values[2]);
+                float c = float.Parse(values[3]);
+                plane_forward_vector = new Vector3(a, b, c);
+                
+            }
+            else
+            {
+                Debug.LogFormat("reveice plane_forward_vector, data length: {0}", values.Length);
                 //Debug.LogFormat("plane_center format is wrong: {0}", data);
             }
         }

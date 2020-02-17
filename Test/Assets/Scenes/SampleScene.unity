@@ -1685,6 +1685,7 @@ MonoBehaviour:
   plane_: {fileID: 1071015373}
   n_vector: {x: 0, y: 1, z: 0}
   pos: {x: 0, y: 1, z: 0}
+  angle: 0
 --- !u!1 &1449307359
 GameObject:
   m_ObjectHideFlags: 0
@@ -2158,6 +2159,7 @@ MonoBehaviour:
   - 0
   - 0
   targetpos: {x: 0, y: 0, z: 0}
+  plane_forward_vector: {x: 0, y: 0, z: 0}
   sample_points:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}

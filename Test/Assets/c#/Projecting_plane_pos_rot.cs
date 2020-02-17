@@ -8,6 +8,7 @@ public class Projecting_plane_pos_rot : MonoBehaviour
     public Vector3 n_vector = Vector3.up;
     public Vector3 pos = Vector3.up;
     private socket_receive receive_data;
+    public float angle = 0;
     
     // Start is called before the first frame update
     void Start()
@@ -25,7 +26,16 @@ public class Projecting_plane_pos_rot : MonoBehaviour
         if(n_vector[2] < 0) n_vector = n_vector * -1;
         //y * -1
         pos = new Vector3(pos[0], -pos[1], pos[2]);
-        plane_.transform.up = n_vector*100;
+
+        plane_.transform.forward = receive_data.plane_forward_vector*100;
+        //plane_.transform.up = n_vector*100;
+
+        //angle = Vector3.Angle(plane_.transform.forward , -Vector3.up);
+        //plane_.transform.Rotate(Vector3.up, -angle, Space.Self);
+
+        //Quaternion rotation = Quaternion.LookRotation(receive_data.plane_forward_vector*100, n_vector*100);
+        //plane_.transform.rotation = rotation;
+
         plane_.transform.position = pos;
     }
 
