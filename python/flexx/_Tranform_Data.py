@@ -66,6 +66,36 @@ def send_targetpos(x, y, points_3d):
 #     print('send plane point:', data)
     socket_sender.send(data)
     
+    
+def send_forward_vector(x, y, fx, fy, points_3d):
+    data = ""
+    temp4 = ['6 ']
+    temp4.append("%f %f %f"%\
+                 (points_3d[fy,fx,0]-points_3d[y,x,0], points_3d[fy,fx,1]-points_3d[y,x,1], points_3d[fy,fx,2]-points_3d[y,x,2]))
+    data = data.join(temp4)
+#     print('send plane point:', data)
+    socket_sender.send(data)
+    
+    
+def send_target_plane(plane_x, plane_y, points_3d):
+    data = ""
+    temp3 = ['3 ']
+    line_num = plane_x.shape[0]
+    point_num = plane_x.shape[1]
+    temp3.append("%d "%(line_num*point_num))
+    for i in range(line_num): 
+        for j in range(point_num): 
+            x = points_3d[i,j,0]
+            y = points_3d[i,j,1]
+            z = points_3d[i,j,2]
+            temp3.append("%f %f %f "%(x, y, z))
+            
+    data = data.join(temp3)
+#     print('send plane point:', data)
+
+    socket_sender.send(data)
+    
+    
 def receive_data(cam):
     stop = False
     data = socket_sender.receive()
