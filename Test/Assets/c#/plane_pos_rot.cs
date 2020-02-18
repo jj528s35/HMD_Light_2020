@@ -43,7 +43,7 @@ public class plane_pos_rot : MonoBehaviour
         List<int> tTriangles = new List<int>();
  
         //根据所有顶点填充点排序
-        for (int i = 0; i < num - 7; i++)
+        for (int i = 0; i < num - 6; i++)
         {
             tTriangles.Add(i);
             tTriangles.Add(i + 1);

@@ -11,7 +11,7 @@ import cv2
 
 # In[2]:
 
-
+#20200215 find target circle
 def find_targetBlob_pos(img, quad_mask):
     ret = False
     px = 0
@@ -56,7 +56,18 @@ def find_targetBlob_pos(img, quad_mask):
     return ret, px, py, circles_image
 
 
+def find_target_circle(grayvalue_img, quad_mask, plane_mask):
+    #find circle
+    success, px, py, circles_image = find_targetBlob_pos(grayvalue_img, quad_mask)
+    if success:
+        targetpos = (px, py)
+        if(plane_mask[py,px] == False):
+            px, py = find_points_on_plane(py, px, plane_mask, kernel_size = 7)
+    return success, px, py, circles_image
+#20200215 find target circle
 
+
+#20200216 find single target line
 def find_targetLine_pos(img, quad_mask, plane_mask):
     ret = False
     px = 0
@@ -169,6 +180,8 @@ def find_center_and_vector_with_depth_value(plane_mask,centerX,centerY,minX,minY
             maxX, maxY = find_points_on_plane(maxY, maxX, plane_mask, kernel_size = 7)
     
     return centerX, centerY, minX, minY, maxX, maxY
+#20200216 find single target line
+
 
 #20200217 find target plane
 def find_targetLine(img, quad_mask, plane_mask):
@@ -221,8 +234,8 @@ def find_targetLine(img, quad_mask, plane_mask):
 #         keypoints = sorted(keypoints, key = keypoints.pt[0], reverse = True)
         keypoints.sort(key=(lambda s: s.pt[0]))
         
-        x = np.zeros((len(keypoints),1), dtype=int)
-        y = np.zeros((len(keypoints),1), dtype=int)
+        x = np.zeros((len(keypoints)), dtype=int)
+        y = np.zeros((len(keypoints)), dtype=int)
         for i in range(len(keypoints)):
             px = int(keypoints[i].pt[0])
             py = int(keypoints[i].pt[1])
@@ -237,24 +250,15 @@ def find_line_slope(x,y):
     #首先開一台線性回歸機
     regr = LinearRegression()
     
+    X = x.reshape((-1, 1))
+    
     #透過LinearRegression.fit()去進行機器學習
     #參數餵給他修正過後的X以及正確答案y
-    regr.fit(x,y)
-
-    #取出機器學習的結果LinearRegression.predict
-    #注意這裡傳入的參數是修正過的X
-    Y = regr.predict(x)
+    regr.fit(X,y)
     
     slope = regr.coef_
     
-    #改變 x y 的shape
-    _x = np.zeros((len(x)), dtype=int)
-    _y = np.zeros((len(y)), dtype=int)
-    for i in range(x.shape[0]):
-        _x[i] = int(x[i,0])
-        _y[i] = int(y[i,0])
-    
-    return slope[0,0], _x, _y
+    return slope[0], x, y
 
 def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask):
     slope_dist = np.sqrt(1 + V_slope*V_slope)
@@ -268,10 +272,9 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
     for i in range(x.shape[0]):
         new_x[i] = int(x[i] - round(1 * t))
         new_y[i] = int(y[i] - round(V_slope * t))
-
 #         circles_image = cv2.circle(circles_image, (new_x[i],new_y[i]), 1, (225,0,0), -1)
         
-    real_dist = 0.03 # 3 cm
+    real_dist = 0.02 # 3 cm
     #intrinsic matrix
     fx = 211.787
     fy = 211.6044
@@ -348,7 +351,7 @@ def uv_to_3d(x,y,points_3d):
     return p
     
     
-def find_target_plane(img, quad_mask, plane_mask, points_3d):
+def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
     success, circles_image, x, y = find_targetLine(img, quad_mask, plane_mask)
     k = 4 #num of line
         
@@ -380,8 +383,8 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d):
             x, y = _x,_y
            
         
-        slope, x, y = find_line_slope(x,y)
-        V_slope = -1/slope  
+#         slope, x, y = find_line_slope(x,y)
+#         V_slope = -1/slope  
         
         
         plane_x = np.zeros((k,len(x)), dtype=int)
@@ -393,13 +396,16 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d):
         plane_points[0,:] = uv_to_3d(x, y, points_3d)
         
         for i in range(1,k):
+            slope, x, y = find_line_slope(x,y)
+            V_slope = -1/slope  
             circles_image, x, y, p = find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask)
             plane_x[i,:] = x
             plane_y[i,:] = y
             plane_points[i,:] = p
+            
 
     return circles_image, plane_x, plane_y, plane_points
-
+#20200217 find target plane
 
 def find_points_on_plane(y, x, mask, kernel_size):
     k = kernel_size//2
@@ -419,22 +425,15 @@ def find_points_on_plane(y, x, mask, kernel_size):
                 return cx, cy
     return x, y
 
-#20200217 find target plane
+
 # In[4]:
 
 
-def find_target_circle(grayvalue_img, quad_mask, plane_mask):
-    #find circle
-    success, px, py, circles_image = find_targetBlob_pos(grayvalue_img, quad_mask)
-    if success:
-        targetpos = (px, py)
-        if(plane_mask[py,px] == False):
-            px, py = find_points_on_plane(py, px, plane_mask, kernel_size = 7)
-    return success, px, py, circles_image
 
 
 # In[5]:
-# find_plane_forward_vector by circle and a points with offset y
+# 20200214
+# find_plane_forward_vector by circle and a points with offset y => Calibration (fake效果，方便用來對齊小黑點和投影位置)
 #從circle(px,py)往y方向上方找點(px,y)
 def find_plane_forward_vector(px, approx, plane_mask, step = 30):
     y = 0
@@ -447,7 +446,7 @@ def find_plane_forward_vector(px, approx, plane_mask, step = 30):
         px, y = find_points_on_plane(y, px, plane_mask, kernel_size = 7)
         
     return px, y
-
+# 20200214
 
 # def MorphologyEx_(img):
 #     kernel_size = 11 #7
@@ -564,6 +563,7 @@ def find_plane_forward_vector(px, approx, plane_mask, step = 30):
 #     return line_image
 # get_ipython().system('jupyter nbconvert --to script _HMD_Light_function.ipynb')
 
+#20200218 show image 3d target points
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
