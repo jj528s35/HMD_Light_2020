@@ -79,15 +79,35 @@ def send_forward_vector(x, y, fx, fy, points_3d):
     
 def send_target_plane(plane_x, plane_y, points_3d):
     data = ""
-    temp3 = ['3 ']
+    temp3 = ['7 ']
     line_num = plane_x.shape[0]
     point_num = plane_x.shape[1]
     temp3.append("%d "%(line_num*point_num))
     for i in range(line_num): 
         for j in range(point_num): 
-            x = points_3d[i,j,0]
-            y = points_3d[i,j,1]
-            z = points_3d[i,j,2]
+            u = plane_x[i,j]
+            v = plane_y[i,j]
+            x = points_3d[v,u,0]
+            y = points_3d[v,u,1]
+            z = points_3d[v,u,2]
+            temp3.append("%f %f %f "%(x, y, z))
+            
+    data = data.join(temp3)
+#     print('send plane point:', data)
+
+    socket_sender.send(data)
+    
+def send_target_plane(plane_p):
+    data = ""
+    temp3 = ['7 ']
+    line_num = plane_p.shape[0]
+    point_num = plane_p.shape[1]
+    temp3.append("%d "%(line_num*point_num))
+    for i in range(line_num): 
+        for j in range(point_num): 
+            x = plane_p[i,j,0]
+            y = plane_p[i,j,1]
+            z = plane_p[i,j,2]
             temp3.append("%f %f %f "%(x, y, z))
             
     data = data.join(temp3)

@@ -278,7 +278,7 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
     cx = 117.6575
     cy = 87.0219
     v = np.zeros((3),dtype=float)
-    new_p = np.zeros((3),dtype=float) #new 3d point which 
+    new_p = np.zeros((len(x),3),dtype=float) #new 3d point which 
     #new line which dist between origional one is 5 cm
     new_u = np.zeros((len(x)), dtype=int)
     new_v = np.zeros((len(y)), dtype=int)
@@ -319,19 +319,19 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
         
         # point p which is 5 cm from the point a with vector v
         _t = real_dist/v_dist
-        new_p[0] = points_3d[_y,_x,0] + v[0] * _t
-        new_p[1] = points_3d[_y,_x,1] + v[1] * _t
-        new_p[2] = points_3d[_y,_x,2] + v[2] * _t
+        new_p[i,0] = points_3d[_y,_x,0] + v[0] * _t
+        new_p[i,1] = points_3d[_y,_x,1] + v[1] * _t
+        new_p[i,2] = points_3d[_y,_x,2] + v[2] * _t
         
         # reproject point p to pixel coord
         # x' = X/Z   y' = Y/Z
         # u = fx*x'+cx
-        if new_p[2] == 0:
-            new_p[2] = 1
+        if new_p[i,2] == 0:
+            new_p[i,2] = 1
             print(_x,_y)
             
-        x_ = new_p[0]/ new_p[2]
-        y_ = new_p[1]/ new_p[2]
+        x_ = new_p[i,0]/ new_p[i,2]
+        y_ = new_p[i,1]/ new_p[i,2]
         u_ = int(round(fx*x_ + cx))
         v_ = int(round(fy*y_ + cy))
         
@@ -339,12 +339,18 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
         new_v[i] = v_
         circles_image = cv2.circle(circles_image, (u_,v_), 2, (255,255,0), -1)
         
-    return circles_image, new_u, new_v
+    return circles_image, new_u, new_v, new_p
     
-
+def uv_to_3d(x,y,points_3d):
+    p = np.zeros((len(x),3))
+    for i in range(len(x)):
+        p[i,:] = points_3d[y[i],x[i],:]
+    return p
+    
+    
 def find_target_plane(img, quad_mask, plane_mask, points_3d):
     success, circles_image, x, y = find_targetLine(img, quad_mask, plane_mask)
-    
+    k = 4 #num of line
         
     if success:
         #if len > 5，去掉沒有深度資料的點(可能是dpeth mask的mask中沒有深度資料的部分被mask掉，使grayvalue中多出一塊mask出的黑色區塊=>多判斷出一個點)
@@ -364,7 +370,7 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d):
                 if plane_mask[y[i,0], x[i,0]] == False:
                     continue
                 else:
-                    if j == 5: 
+                    if j == k: 
                         break
                     _x[j,0] = x[j,0]
                     _y[j,0] = y[j,0]
@@ -377,17 +383,22 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d):
         slope, x, y = find_line_slope(x,y)
         V_slope = -1/slope  
         
-        k = 5
+        
         plane_x = np.zeros((k,len(x)), dtype=int)
         plane_y = np.zeros((k,len(x)), dtype=int)
         plane_x[0,:] = x
         plane_y[0,:] = y
+        
+        plane_points = np.zeros((k,len(x),3), dtype=float)
+        plane_points[0,:] = uv_to_3d(x, y, points_3d)
+        
         for i in range(1,k):
-            circles_image, x, y = find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask)
+            circles_image, x, y, p = find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask)
             plane_x[i,:] = x
             plane_y[i,:] = y
+            plane_points[i,:] = p
 
-    return circles_image, plane_x, plane_y
+    return circles_image, plane_x, plane_y, plane_points
 
 
 def find_points_on_plane(y, x, mask, kernel_size):
@@ -408,7 +419,7 @@ def find_points_on_plane(y, x, mask, kernel_size):
                 return cx, cy
     return x, y
 
-
+#20200217 find target plane
 # In[4]:
 
 
@@ -553,3 +564,28 @@ def find_plane_forward_vector(px, approx, plane_mask, step = 30):
 #     return line_image
 # get_ipython().system('jupyter nbconvert --to script _HMD_Light_function.ipynb')
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+def show_plane(plane_x, plane_y, points_3d):
+    line_num = plane_x.shape[0]
+    point_num = plane_x.shape[1]
+    size = line_num * point_num
+    
+    x = np.linspace(-1,1,size)
+    y = np.linspace(-1,1,size)
+    z = np.linspace(-1,1,size)
+    
+    for i in range(line_num): 
+        for j in range(point_num): 
+            u = plane_x[i,j]
+            v = plane_y[i,j]
+            x[i*line_num+j] = points_3d[v,u,0]
+            y[i*line_num+j] = points_3d[v,u,1]
+            z[i*line_num+j] = points_3d[v,u,2]
+    
+
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    surf = ax.scatter(x, y, z)
