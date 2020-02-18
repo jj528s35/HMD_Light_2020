@@ -242,7 +242,7 @@ public class socket_receive : MonoBehaviour
         }
         else if(dataType == (int) ReceiveType.target_plane_Type)
         {
-            //Debug.LogFormat("reveice touch state, data length: {0}", values.Length);
+            // Debug.LogFormat("reveice touch state, data length: {0}", values.Length);
             target_plane_points_num = int.Parse(values[1]);
             
             if ((values.Length-3) == target_plane_points_num*3)
