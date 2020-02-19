@@ -354,6 +354,9 @@ def uv_to_3d(x,y,points_3d):
 def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
     success, circles_image, x, y = find_targetLine(img, quad_mask, plane_mask)
     k = 4 #num of line
+    plane_x = np.zeros((k,len(x)), dtype=int)
+    plane_y = np.zeros((k,len(x)), dtype=int)
+    plane_points = np.zeros((k,len(x),3), dtype=float)
         
     if success:
         #if len > 5，去掉沒有深度資料的點(可能是dpeth mask的mask中沒有深度資料的部分被mask掉，使grayvalue中多出一塊mask出的黑色區塊=>多判斷出一個點)
@@ -404,7 +407,7 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
             plane_points[i,:] = p
             
 
-    return circles_image, plane_x, plane_y, plane_points
+    return success, circles_image, plane_x, plane_y, plane_points
 #20200217 find target plane
 
 def find_points_on_plane(y, x, mask, kernel_size):

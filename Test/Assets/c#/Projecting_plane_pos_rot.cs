@@ -27,11 +27,12 @@ public class Projecting_plane_pos_rot : MonoBehaviour
         //y * -1
         pos = new Vector3(pos[0], -pos[1], pos[2]);
 
-        plane_.transform.forward = receive_data.plane_forward_vector*100;
-        //plane_.transform.up = n_vector*100;
+        //plane_.transform.forward = receive_data.plane_forward_vector*100;
+        plane_.transform.up = n_vector*100;
 
-        //angle = Vector3.Angle(plane_.transform.forward , -Vector3.up);
-        //plane_.transform.Rotate(Vector3.up, -angle, Space.Self);
+        angle = Vector3.Angle(plane_.transform.right , receive_data.plane_forward_vector);
+        int sign = Vector3.Cross(plane_.transform.right, receive_data.plane_forward_vector).z < 0 ? -1 : 1;
+        plane_.transform.Rotate(Vector3.up, sign * -angle, Space.Self);
 
         //Quaternion rotation = Quaternion.LookRotation(receive_data.plane_forward_vector*100, n_vector*100);
         //plane_.transform.rotation = rotation;
