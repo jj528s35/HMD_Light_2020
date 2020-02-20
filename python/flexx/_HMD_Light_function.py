@@ -260,7 +260,8 @@ def find_line_slope(x,y):
     
     return slope[0], x, y
 
-def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask):
+def find_new_target_line_in_3d(circles_image, x, y, p, V_slope, points_3d, plane_mask):
+    success = True
     slope_dist = np.sqrt(1 + V_slope*V_slope)
     #dist between a and a' is 5
     dist = 10 # 10 pixel
@@ -270,11 +271,15 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
     new_x = np.zeros((len(x)), dtype=int)
     new_y = np.zeros((len(y)), dtype=int)
     for i in range(x.shape[0]):
-        new_x[i] = int(x[i] - round(1 * t))
-        new_y[i] = int(y[i] - round(V_slope * t))
+        if(V_slope > 0):
+            new_x[i] = int(x[i] - round(1 * t))
+            new_y[i] = int(y[i] - round(V_slope * t))
+        else:
+            new_x[i] = int(x[i] + round(1 * t))
+            new_y[i] = int(y[i] + round(V_slope * t))
 #         circles_image = cv2.circle(circles_image, (new_x[i],new_y[i]), 1, (225,0,0), -1)
         
-    real_dist = 0.02 # 3 cm
+    real_dist = 0.03 # 3 cm
     #intrinsic matrix
     fx = 211.787
     fy = 211.6044
@@ -286,52 +291,60 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
     new_u = np.zeros((len(x)), dtype=int)
     new_v = np.zeros((len(y)), dtype=int)
     for i in range(x.shape[0]):
-        _x = x[i]
-        _y = y[i]
+#         _x = x[i]
+#         _y = y[i]
         _nx = new_x[i] 
         _ny = new_y[i] 
         
         
-        #boundary
-        if _x >= circles_image.shape[1]:
-            _x = circles_image.shape[1]-1
+#         #boundary
+#         if _x >= circles_image.shape[1]:
+#             _x = circles_image.shape[1]-1
             
-        if _y >= circles_image.shape[0]:
-            _y = circles_image.shape[0]-1
+#         if _y >= circles_image.shape[0]:
+#             _y = circles_image.shape[0]-1
         
         #boundary
         if _nx >= circles_image.shape[1]:
             _nx = circles_image.shape[1]-1
+            success = False
             
         if _ny >= circles_image.shape[0]:
             _ny = circles_image.shape[0]-1
+            success = False
             
-        #check if it have value
-        if(plane_mask[_y,_x] == False):
-            _x, _y = find_points_on_plane(_y,_x, plane_mask, kernel_size = 7)
+#         #check if it have value
+#         if(plane_mask[_y,_x] == False):
+#             _x, _y = find_points_on_plane(_y,_x, plane_mask, kernel_size = 7)
             
         if(plane_mask[_ny,_nx] == False):
-            _nx, _ny = find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 7)
+            _nx, _ny = find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 3)
+            if(plane_mask[_ny,_nx] == False):
+                success = False
         
         # vector from a to a' in 3d coord
-        v[0] = points_3d[_ny,_nx,0]-points_3d[_y,_x,0]
-        v[1] = points_3d[_ny,_nx,1]-points_3d[_y,_x,1]
-        v[2] = points_3d[_ny,_nx,2]-points_3d[_y,_x,2]
+        v[0] = points_3d[_ny,_nx,0]-p[i,0] #points_3d[_y,_x,0]
+        v[1] = points_3d[_ny,_nx,1]-p[i,1] #points_3d[_y,_x,1]
+        v[2] = points_3d[_ny,_nx,2]-p[i,2] #points_3d[_y,_x,2]
         #dist between a to a' in 3d coord
         v_dist = np.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])
         
+        if v_dist == 0:
+            success = False
+            return success, circles_image, new_u, new_v, new_p
+        
         # point p which is 5 cm from the point a with vector v
         _t = real_dist/v_dist
-        new_p[i,0] = points_3d[_y,_x,0] + v[0] * _t
-        new_p[i,1] = points_3d[_y,_x,1] + v[1] * _t
-        new_p[i,2] = points_3d[_y,_x,2] + v[2] * _t
+        new_p[i,0] = p[i,0] + v[0] * _t #points_3d[_y,_x,0] + v[0] * _t
+        new_p[i,1] = p[i,1] + v[1] * _t #points_3d[_y,_x,1] + v[1] * _t
+        new_p[i,2] = p[i,2] + v[2] * _t #points_3d[_y,_x,2] + v[2] * _t
         
         # reproject point p to pixel coord
         # x' = X/Z   y' = Y/Z
         # u = fx*x'+cx
         if new_p[i,2] == 0:
             new_p[i,2] = 1
-            print(_x,_y)
+#             print(_x,_y)
             
         x_ = new_p[i,0]/ new_p[i,2]
         y_ = new_p[i,1]/ new_p[i,2]
@@ -342,13 +355,18 @@ def find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_ma
         new_v[i] = v_
         circles_image = cv2.circle(circles_image, (u_,v_), 2, (255,255,0), -1)
         
-    return circles_image, new_u, new_v, new_p
+    return success, circles_image, new_u, new_v, new_p
     
-def uv_to_3d(x,y,points_3d):
+def uv_to_3d(x,y,points_3d, plane_mask):
+    success = True
     p = np.zeros((len(x),3))
     for i in range(len(x)):
+        if (points_3d[y[i],x[i], 0] == False):
+            x[i],y[i] = find_points_on_plane(y[i],x[i], plane_mask, 3)
+            if (points_3d[y[i],x[i], 0] == False):
+                success = False
         p[i,:] = points_3d[y[i],x[i],:]
-    return p
+    return success, p
     
     
 def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
@@ -361,25 +379,25 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
     if success:
         #if len > 5，去掉沒有深度資料的點(可能是dpeth mask的mask中沒有深度資料的部分被mask掉，使grayvalue中多出一塊mask出的黑色區塊=>多判斷出一個點)
         if len(x) > 5:
-            _x = np.zeros((len(x)-1,1), dtype=int)
-            _y = np.zeros((len(y)-1,1), dtype=int)
-#             print(x,y)
+            _x = np.zeros((len(x)-1), dtype=int)
+            _y = np.zeros((len(y)-1), dtype=int)
+            print(x,y)
             j = 0
-            for i in range(x.shape[0]):
+            for i in range(len(x)):
                 #boundary
-                if x[i,0] >= circles_image.shape[1]:
-                    x[i,0] = circles_image.shape[1]-1
+                if x[i] >= circles_image.shape[1]:
+                    x[i] = circles_image.shape[1]-1
 
-                if y[i,0] >= circles_image.shape[0]:
-                    y[i,0] = circles_image.shape[0]-1
+                if y[i] >= circles_image.shape[0]:
+                    y[i] = circles_image.shape[0]-1
                     
-                if plane_mask[y[i,0], x[i,0]] == False:
+                if plane_mask[y[i], x[i]] == False:
                     continue
                 else:
                     if j == k: 
                         break
-                    _x[j,0] = x[j,0]
-                    _y[j,0] = y[j,0]
+                    _x[j] = x[j]
+                    _y[j] = y[j]
                     j = j + 1
                     
 #             print("new : ",_x,_y)
@@ -396,16 +414,22 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
         plane_y[0,:] = y
         
         plane_points = np.zeros((k,len(x),3), dtype=float)
-        plane_points[0,:] = uv_to_3d(x, y, points_3d)
+        success, p = uv_to_3d(x, y, points_3d, plane_mask)
+        plane_points[0,:] = p
         
         for i in range(1,k):
             slope, x, y = find_line_slope(x,y)
+            if slope == 0:
+                slope = 1
             V_slope = -1/slope  
-            circles_image, x, y, p = find_new_target_line_in_3d(circles_image, x, y, V_slope, points_3d, plane_mask)
+            newline_success, circles_image, x, y, p = find_new_target_line_in_3d(circles_image, x, y, p, V_slope, points_3d, plane_mask)
             plane_x[i,:] = x
             plane_y[i,:] = y
             plane_points[i,:] = p
             
+            if newline_success == False:
+                success = False
+                break
 
     return success, circles_image, plane_x, plane_y, plane_points
 #20200217 find target plane

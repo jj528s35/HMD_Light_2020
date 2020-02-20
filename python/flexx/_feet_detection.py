@@ -36,7 +36,9 @@ def feet_detection(depthImg, quad_mask, height, feet_height):
 
 
 def feet_top_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1, VR_user = True):
-    """ VR_user: find the feet top(Ellipses up) in lower quad mask
+    """ 
+        Need Interaction
+        VR_user: find the feet top(Ellipses up) in lower quad mask
         non VR_user: find the feet top(Ellipses down) in upper quad mask
     """
     if VR_user:
@@ -131,7 +133,68 @@ def find_top(image, ellipse_List, VR_user = True):
         cv2.circle(image, (x,y), 2 , (255,255,0) , -1)
     return image, feet_top
 
-def find_center_and_vector_by_top(feet_top, img, plane_mask):
+# for go forward type
+def find_feet_list(image, ellipse_List):
+    #         https://stackoverflow.com/questions/33432652/how-draw-axis-of-ellipse?fbclid=IwAR2l6knFBSlRjP7hg2chCR-8IF5gPvCGtkwUWyZ0Mnt3yoYbBAGVAkMVP1w
+    feet_list = []
+    
+    if(len(ellipse_List) == 1):#單腳
+        image, feet_list = find_single_feet_left_right(image, ellipse_List[0])
+    
+    elif(len(ellipse_List) == 2):
+        ellipse = ellipse_List[0]
+        ellipse1 = ellipse_List[1]
+        
+        e_x = ellipse[0][0]
+        e_y = ellipse[0][1]
+        e1_x = ellipse1[0][0]
+        e1_y = ellipse1[0][1]
+        
+        slope = (e_y - e1_y)/(e_x - e1_x)
+        if abs(slope) < 0.5: #雙腳平行
+            image, feet_list = find_top(image, ellipse_List, VR_user = True)
+        else: #左右差太多距離...選前面的
+            if e_y < e1_y:
+                image, feet_list = find_single_feet_left_right(image, ellipse_List[0])
+            else:
+                image, feet_list = find_single_feet_left_right(image, ellipse_List[1])
+
+    return image, feet_list
+
+def find_single_feet_left_right(image, ellipse):
+    image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+    feet_list = []
+
+    a = ellipse[1][0] / 2
+    b = ellipse[1][1] / 2
+    theta = ellipse[2]* np.pi / 180.0
+
+    # left one
+    x = int(ellipse[0][0] - round(a * np.cos(theta)))
+    y = int(ellipse[0][1] - round(a * np.sin(theta)))
+    feet_list.append((x,y))
+    cv2.circle(image, (x,y), 2 , (255,0,255) , -1)
+
+    # right one
+    x = int(ellipse[0][0] + round(a * np.cos(theta)))
+    y = int(ellipse[0][1] + round(a * np.sin(theta)))
+    feet_list.append((x,y))
+    cv2.circle(image, (x,y), 2 , (255,0,255) , -1)
+    return image, feet_list
+
+def feet_list_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1):
+    """ go forward type
+    """
+    #     feet detection
+    feet_region_with_Ellipses, max_highter_region, ellipse_list = \
+        feet_detection(depthImg, quad_mask, height, feet_height)
+    #     find the list of feet
+    feet_region_with_Ellipses, feet_list = find_feet_list(feet_region_with_Ellipses, ellipse_list)
+    return feet_region_with_Ellipses, max_highter_region, ellipse_list, feet_list
+
+
+
+def find_center_and_vector_by_top(feet_top, img):
     success = False
     minX = 0
     minY = 0
@@ -152,9 +215,6 @@ def find_center_and_vector_by_top(feet_top, img, plane_mask):
             maxX = feet_top[0][0]
             maxY = feet_top[0][1]
             
-        centerX = int(round((minX + maxX)/2))
-        centerY = int(round((minY + maxY)/2))
-        cv2.circle(img, (centerX,centerY), 2 , (0,255,255) , -1)
         
         #boundary
         maxX = boundary_check(maxX, img.shape[1])
@@ -162,11 +222,9 @@ def find_center_and_vector_by_top(feet_top, img, plane_mask):
         minX = boundary_check(minX, img.shape[1])
         minY = boundary_check(minY, img.shape[0])
         
-        if(plane_mask[maxY,maxX] == False):
-            maxX, maxY = _HMD_Light_function.find_points_on_plane(maxY, maxX, plane_mask, kernel_size = 7)
-            
-        if(plane_mask[minY,minX] == False):
-            minX, minY = _HMD_Light_function.find_points_on_plane(minY, minX, plane_mask, kernel_size = 7)
+        centerX = int(round((minX + maxX)/2))
+        centerY = int(round((minY + maxY)/2))
+        cv2.circle(img, (centerX,centerY), 2 , (0,255,255) , -1)
         
     return success, centerX, centerY, minX, minY, maxX, maxY, img
 
@@ -177,8 +235,12 @@ def boundary_check(x, boundary):
         x = 0
     return x
 
-def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, plane_size = 0.1):
-    slope = (maxY - minY)/(maxX - minX)
+def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, plane_mask, plane_size = 0.1):
+    success = True
+    if (maxX - minX) == 0:
+        slope = 1
+    else:
+        slope = (maxY - minY)/(maxX - minX)
     if slope == 0:
         slope = 1
         
@@ -211,19 +273,23 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     _y = centerY
 
     #boundary
-    if _nx >= img.shape[1]:
-        _nx = img.shape[1]-1
-
-    if _ny >= img.shape[0]:
-        _ny = img.shape[0]-1
+    _nx = boundary_check(_nx, img.shape[1])
+    _ny = boundary_check(_ny, img.shape[0])
 
 #     #check if it have value
-#     if(plane_mask[_y,_x] == False):
-#         _x, _y = find_points_on_plane(_y,_x, plane_mask, kernel_size = 7)
+    if(plane_mask[_y,_x] == False):
+        _x, _y = _HMD_Light_function.find_points_on_plane(_y,_x, plane_mask, kernel_size = 7)
+        if(plane_mask[_y,_x] == False):
+            success = False
 
-#     if(plane_mask[_ny,_nx] == False):
-#         _nx, _ny = find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 7)
+    if(plane_mask[_ny,_nx] == False):
+        _nx, _ny = _HMD_Light_function.find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 7)
+        if(plane_mask[_ny,_nx] == False):
+            success = False
 
+    if success == False:
+        return success, img, 0, 0
+    
     # vector from a to a' in 3d coord
     v[0] = points_3d[_ny,_nx,0]-points_3d[_y,_x,0]
     v[1] = points_3d[_ny,_nx,1]-points_3d[_y,_x,1]
@@ -242,7 +308,7 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     # u = fx*x'+cx
     if new_p[2] == 0:
         new_p[2] = 1
-
+        
     x_ = new_p[0]/ new_p[2]
     y_ = new_p[1]/ new_p[2]
     u_ = int(round(fx*x_ + cx))
@@ -254,7 +320,7 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     u_ = boundary_check(u_, img.shape[1])
     v_ = boundary_check(v_, img.shape[0])
         
-    return img, u_,v_
+    return success, img, u_,v_
 
 
 

@@ -46,14 +46,16 @@ public class plane_pos_rot : MonoBehaviour
         //根据所有顶点填充点排序
         for (int i = 0; i < num - 6; i++)
         {
+            if (i % 5 == 4) continue;
+
             tTriangles.Add(i);
             tTriangles.Add(i + 1);
             tTriangles.Add(i + 6);
 
             // lower left triangle
             tTriangles.Add(i);
-            tTriangles.Add(i + 5);
             tTriangles.Add(i + 6);
+            tTriangles.Add(i + 5); 
         }
  
         //赋值多边形顶点
@@ -61,6 +63,15 @@ public class plane_pos_rot : MonoBehaviour
  
         //赋值三角形点排序
         tMesh.triangles = tTriangles.ToArray();
+
+        //texture coordinates of the Mesh.
+        Vector2[] uvs = new Vector2[tVertices.Length];
+
+        for (int i = 0; i < uvs.Length; i++)
+        {
+            uvs[i] = new Vector2(tVertices[i].x, tVertices[i].z);
+        }
+        tMesh.uv = uvs;
  
         //重新设置UV，法线
         tMesh.RecalculateBounds();
