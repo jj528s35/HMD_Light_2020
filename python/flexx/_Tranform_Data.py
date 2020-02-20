@@ -114,6 +114,15 @@ def send_target_plane(plane_p):
 #     print('send plane point:', data)
 
     socket_sender.send(data)
+
+
+def send_project_type(_type):
+    data = ""
+    temp1 = ['8 ']
+    temp1.append("%d"%(_type))
+    data = data.join(temp1)
+#     print('send plane_eq:', data)
+    socket_sender.send(data)
     
     
 def receive_data(cam):
@@ -145,8 +154,10 @@ def ParseData(data, cam):
 
 # change the usercase
 def change_user_case(fps,cam):
-    if(fps == 5):
-        cam.setUseCase('MODE_9_5FPS_2000')
+    if(fps == 45):
+        cam.setUseCase('MODE_5_45FPS_500')
+    elif(fps == 35):
+        cam.setUseCase('MODE_5_35FPS_600')
     print("UseCase",cam.getCurrentUseCase())
 
 

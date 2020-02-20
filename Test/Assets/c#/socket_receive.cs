@@ -14,19 +14,24 @@ public class socket_receive : MonoBehaviour
     private TcpListener tcpListener;
     private Thread tcpListenerThread;
     private TcpClient connectedTcpClient;
+    [Header("Project type")]
+    public int Type = 0;
 
-    [Header("socket receive")]
+    [Header("socket receive project on floor")]
     public float[] plane_equation = new float[4];
     public Vector3 targetpos;
     public Vector3 plane_forward_vector;
-    public Vector3[] sample_points = new Vector3[3];
-    public Vector3[] plane_points = new Vector3[4];
-    public int plane_points_num = 4;
-    public Vector3 plane_center;
 
     [Header("socket receive project on body")]
     public Vector3[] target_plane = new Vector3[25];
     public int target_plane_points_num = 25;
+
+
+    [Header("socket receive")]
+    public Vector3[] sample_points = new Vector3[3];
+    public Vector3[] plane_points = new Vector3[4];
+    public int plane_points_num = 4;
+    public Vector3 plane_center;
 
 
     [Header("socket send")]
@@ -44,7 +49,8 @@ public class socket_receive : MonoBehaviour
         plane_center_type,
         targetpos_type,
         plane_forward_Type,
-        target_plane_Type
+        target_plane_Type,
+        project_type_Type
     };
     
     // Start is called before the first frame update
@@ -53,6 +59,7 @@ public class socket_receive : MonoBehaviour
         tcpListenerThread = new Thread(new ThreadStart(ListenForIncommingRequests));
         tcpListenerThread.IsBackground = true;
         tcpListenerThread.Start();
+        Debug.Log("Q : close client");
     }
 
      void OnDiaable()
@@ -72,12 +79,21 @@ public class socket_receive : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.Alpha1))
         {
-            int fps = 5;
+            int fps = 45;
+            Type = 0;
             SendMessage("1 "+ fps);
         }
 
         if(Input.GetKeyDown(KeyCode.Alpha2))
         {
+            int fps = 35;
+            Type = 1;
+            SendMessage("1 "+ fps);
+        }
+
+        if(Input.GetKeyDown(KeyCode.Q))
+        {
+            Type = -1;
             SendMessage("2 stop!");
         }
     }
@@ -260,6 +276,19 @@ public class socket_receive : MonoBehaviour
             {
                 Debug.LogFormat("target_plane_points, data length: {0}", values.Length);
                 //Debug.LogFormat("plane_points format is wrong: {0}", data);
+            }
+        }
+        if(dataType == (int)ReceiveType.project_type_Type)
+        {
+            if (values.Length == 2)
+            {
+                Type =  int.Parse(values[1]);
+                print("Type : " + Type);
+            }
+            else
+            {
+                Debug.LogFormat("reveice project_type_Type equation, data length: {0}", values.Length);
+                //Debug.LogFormat("plane equation format is wrong: {0}", data);
             }
         }
     }

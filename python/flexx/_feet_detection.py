@@ -3,11 +3,12 @@ import matplotlib.pyplot as plt
 import cv2
 import _HMD_Light_function
 
-def feet_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1):
+def feet_detection(depthImg, quad_mask, height, feet_height):
+    """ find the feet mask and ellipse_list"""
     #find the highter_region mask which distance between resulting plane is > height
-    #Then find the highter_region_in_quad : the higher region which is inside the quad mask
     #find the lower_region mask which distance between resulting plane is < feet_height
-    #feet_region : max_highter_region which distance between resulting plane is < feet_height
+    #feet_region : region which distance between resulting plane is < feet_height and > height
+    #Then find the feet_region : the feet_region which is inside the quad mask
     
     highter_region = depthImg > height
     lower_region = depthImg < feet_height
@@ -15,7 +16,7 @@ def feet_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1):
     feet_region = np.logical_and(highter_region, lower_region)
     feet_region = np.logical_and(feet_region, quad_mask)
     
-    #find the mask of the max contourArea in highter_region_in_quad ==> find the body, leg, and feet
+    #max_highter_region : smooth the feet_region and find the mask of the max 5 contourArea in feet_region
     feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
     area = 0
     max_highter_region = np.zeros(depthImg.shape)
@@ -28,13 +29,33 @@ def feet_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1):
                 #依Contours圖形建立mask
                 cv2.drawContours(max_highter_region, [c], -1, True, -1) #255        →白色, -1→塗滿
                 
-    
-    feet_region_with_Ellipses, ellipse_list = fit_Ellipses(max_highter_region.astype(np.uint8))#feet_region_smooth
-    feet_region_with_Ellipses, feet_top = find_top(feet_region_with_Ellipses, ellipse_list)
-    
-    
-    return feet_region_with_Ellipses, max_highter_region, ellipse_list, feet_top
+#     fit the ellipse in max_highter_region, feet_region_with_Ellipses : mask of ellipse
+    feet_region_with_Ellipses, ellipse_list = fit_Ellipses(max_highter_region.astype(np.uint8))
 
+    return feet_region_with_Ellipses, max_highter_region, ellipse_list 
+
+
+def feet_top_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1, VR_user = True):
+    """ VR_user: find the feet top(Ellipses up) in lower quad mask
+        non VR_user: find the feet top(Ellipses down) in upper quad mask
+    """
+    if VR_user:
+        mask = np.zeros(depthImg.shape)
+        mask[0:depthImg.shape[0]//2,:] = False
+        mask[depthImg.shape[0]//2:-1,:] = True
+        quad_mask = np.logical_and(quad_mask, mask)
+    else:
+        mask = np.zeros(depthImg.shape)
+        mask[0:depthImg.shape[0]//2,:] = True
+        mask[depthImg.shape[0]//2:-1,:] = False
+        quad_mask = np.logical_and(quad_mask, mask)
+    
+    #     feet detection
+    feet_region_with_Ellipses, max_highter_region, ellipse_list = \
+        feet_detection(depthImg, quad_mask, height, feet_height)
+    #     find the top of feet
+    feet_region_with_Ellipses, feet_top = find_top(feet_region_with_Ellipses, ellipse_list, VR_user = True)
+    return feet_region_with_Ellipses, max_highter_region, ellipse_list, feet_top
 
 
 def fit_Ellipses(feet_region):
@@ -83,21 +104,28 @@ def MorphologyEx(img):
     return plane_blur
 
 
-def find_top(image, ellipse_List):
+def find_top(image, ellipse_List, VR_user = True):
     #         https://stackoverflow.com/questions/33432652/how-draw-axis-of-ellipse?fbclid=IwAR2l6knFBSlRjP7hg2chCR-8IF5gPvCGtkwUWyZ0Mnt3yoYbBAGVAkMVP1w
     image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_GRAY2BGR)
     feet_top = []
+    
+    if VR_user:
+        top = 1
+    else:
+        top = -1
+    
     for ellipse in ellipse_List:
         a = ellipse[1][0] / 2
         b = ellipse[1][1] / 2
         theta = ellipse[2]* np.pi / 180.0
         
+        
         if np.cos(theta) < 0:
-            x = int(ellipse[0][0] - round(b * np.sin(theta)))
-            y = int(ellipse[0][1] + round(b * np.cos(theta)))
+            x = int(ellipse[0][0] - top*round(b * np.sin(theta)))
+            y = int(ellipse[0][1] + top*round(b * np.cos(theta)))
         elif np.cos(theta) > 0:
-            x = int(ellipse[0][0] + round(b * np.sin(theta)))
-            y = int(ellipse[0][1] - round(b * np.cos(theta)))
+            x = int(ellipse[0][0] + top*round(b * np.sin(theta)))
+            y = int(ellipse[0][1] - top*round(b * np.cos(theta)))
         
         feet_top.append((x,y))
         cv2.circle(image, (x,y), 2 , (255,255,0) , -1)
@@ -129,17 +157,10 @@ def find_center_and_vector_by_top(feet_top, img, plane_mask):
         cv2.circle(img, (centerX,centerY), 2 , (0,255,255) , -1)
         
         #boundary
-        if maxX > img.shape[1]:
-            maxX = img.shape[1]
-            
-        if maxY > img.shape[0]:
-            maxY = img.shape[0]
-            
-        if minX <= 0:
-            minX = 0
-            
-        if minY <= 0:
-            minY = 0
+        maxX = boundary_check(maxX, img.shape[1])
+        maxY = boundary_check(maxY, img.shape[0])
+        minX = boundary_check(minX, img.shape[1])
+        minY = boundary_check(minY, img.shape[0])
         
         if(plane_mask[maxY,maxX] == False):
             maxX, maxY = _HMD_Light_function.find_points_on_plane(maxY, maxX, plane_mask, kernel_size = 7)
@@ -148,6 +169,13 @@ def find_center_and_vector_by_top(feet_top, img, plane_mask):
             minX, minY = _HMD_Light_function.find_points_on_plane(minY, minX, plane_mask, kernel_size = 7)
         
     return success, centerX, centerY, minX, minY, maxX, maxY, img
+
+def boundary_check(x, boundary):
+    if x >= boundary:
+        x = boundary-1
+    if x < 0:
+        x = 0
+    return x
 
 def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, plane_size = 0.1):
     slope = (maxY - minY)/(maxX - minX)
@@ -221,43 +249,12 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     v_ = int(round(fy*y_ + cy))
     
     cv2.circle(img, (u_,v_), 2 , (0,255,0) , -1)
+    
+    #boundary
+    u_ = boundary_check(u_, img.shape[1])
+    v_ = boundary_check(v_, img.shape[0])
+        
     return img, u_,v_
 
-######20200123
-def _feet_detection(depthImg, mask_successful, quad_mask, height = 0.05, feet_height = 0.1):
-    #find the highter_region mask which distance between resulting plane is > height
-    #Then find the highter_region_in_quad : the higher region which is inside the quad mask
-    highter_region = depthImg > height
-    if (mask_successful):
-        highter_region_in_quad = np.logical_and(highter_region, quad_mask)
-    else:
-        highter_region_in_quad = highter_region
-        ellipse_list = []
-        feet_region_with_Ellipses = np.zeros(depthImg.shape)
-        return feet_region_with_Ellipses, ellipse_list
-    
-    #find the mask of the max contourArea in highter_region_in_quad ==> find the body, leg, and feet
-    area = 0
-    max_highter_region = np.zeros(depthImg.shape)
-    (_, cnts, _) = cv2.findContours(highter_region_in_quad.astype(np.uint8)*255, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) 
-    if len(cnts) >= 1 :
-        cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:2]
-        for c in cnts:
-            area = cv2.contourArea(c)
-            if area > 1000: #the body, leg, and feet area > 1000
-                #依Contours圖形建立mask
-                cv2.drawContours(max_highter_region, [c], -1, True, -1) #255        →白色, -1→塗滿
-        
-    
-    #find the lower_region mask which distance between resulting plane is < feet_height
-    #feet_region : max_highter_region which distance between resulting plane is < feet_height
-    lower_region = depthImg < feet_height
-    feet_region = np.logical_and(max_highter_region, lower_region)
-    
-    feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
-    
-    feet_region_with_Ellipses, ellipse_list = fit_Ellipses(feet_region_smooth)
-    
-    return feet_region_with_Ellipses, ellipse_list
 
 

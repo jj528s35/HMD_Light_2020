@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class plane_pos_rot : MonoBehaviour
 { 
-    public GameObject plane_;
-    public Vector3 n_vector = Vector3.up;
+    /*project on body*/
+    
+    /*public GameObject plane_;
+    public Vector3 n_vector = Vector3.up;*/
     private socket_receive receive_data;
     // Start is called before the first frame update
     void Start()
@@ -16,19 +18,18 @@ public class plane_pos_rot : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        /* depth plane mask visualiation
-        int num = receive_data.plane_points_num;
-        Vector3[] plane_points = receive_data.plane_points;
-
-        DoCreatPloygonMesh(plane_points);*/
-
-
         int num = receive_data.target_plane_points_num;
         Vector3[] plane_points = receive_data.target_plane;
 
         DoCreatPloygonMesh2(plane_points, num);
 
-        //DoCreatPloygonMesh(plane_points);
+        /* depth plane mask visualiation
+        int num = receive_data.plane_points_num;
+        Vector3[] plane_points = receive_data.plane_points;
+
+        DoCreatPloygonMesh(plane_points);
+
+        //DoCreatPloygonMesh(plane_points);*/
     }
 
     public void DoCreatPloygonMesh2(Vector3[] s_Vertives, int num)
@@ -72,6 +73,7 @@ public class plane_pos_rot : MonoBehaviour
  
     }
 
+    /*
     public void DoCreatPloygonMesh(Vector3[] s_Vertives)
     {
         //新申请一个Mesh网格
@@ -107,4 +109,5 @@ public class plane_pos_rot : MonoBehaviour
         GetComponent<MeshFilter>().mesh = tMesh;
  
     }
+    */
 }

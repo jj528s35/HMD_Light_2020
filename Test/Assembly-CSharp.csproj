@@ -55,15 +55,12 @@
   <ItemGroup>
      <Compile Include="Assets\c#\cameraSetup.cs" />
      <Compile Include="Assets\c#\Debug_camera_pos.cs" />
+     <Compile Include="Assets\c#\motor_control.cs" />
      <Compile Include="Assets\c#\plane_pos_rot.cs" />
      <Compile Include="Assets\c#\Projecting_plane_pos_rot.cs" />
      <Compile Include="Assets\c#\socket_receive.cs" />
      <Compile Include="Assets\c#\UI.cs" />
      <Compile Include="Assets\c#\X\RGB_camera_set.cs" />
-     <Compile Include="Assets\XXsampleDotNetRetrieveData\fless_test.cs" />
-     <Compile Include="Assets\XXsampleDotNetRetrieveData\Program.cs" />
-     <Compile Include="Assets\XXsampleDotNetRetrieveData\Properties\AssemblyInfo.cs" />
-     <None Include="Assets\XXsampleDotNetRetrieveData\CMakeLists.txt" />
  <Reference Include="Unity.TextMeshPro.Editor">
  <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
  </Reference>
@@ -279,9 +276,6 @@
  </Reference>
  <Reference Include="UnityEngine.SpatialTracking">
  <HintPath>D:/unity2017/2018/Editor/Data/UnityExtensions/Unity/UnitySpatialTracking/RuntimeEditor/UnityEngine.SpatialTracking.dll</HintPath>
- </Reference>
- <Reference Include="RoyaleDotNet">
- <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Assets/XXsampleDotNetRetrieveData/RoyaleDotNet.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine.Advertisements">
  <HintPath>D:/Lab/HMD_Light/HMD_Light_2020/Test/Library/PackageCache/com.unity.ads@2.3.1/Runtime/UnityEngine.Advertisements.dll</HintPath>

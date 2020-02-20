@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Projecting_plane_pos_rot : MonoBehaviour
 {
+   /*project on floor*/
     public GameObject plane_;
     public Vector3 n_vector = Vector3.up;
     public Vector3 pos = Vector3.up;
@@ -21,11 +22,11 @@ public class Projecting_plane_pos_rot : MonoBehaviour
     {
         float[] eq = receive_data.plane_equation;
         pos = receive_data.targetpos;
+        //y * -1
+        pos = new Vector3(pos[0], -pos[1], pos[2]);
         
         n_vector = new Vector3(eq[0], -eq[1], eq[2]);
         if(n_vector[2] < 0) n_vector = n_vector * -1;
-        //y * -1
-        pos = new Vector3(pos[0], -pos[1], pos[2]);
 
         //plane_.transform.forward = receive_data.plane_forward_vector*100;
         plane_.transform.up = n_vector*100;
