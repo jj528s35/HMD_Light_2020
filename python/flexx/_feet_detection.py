@@ -19,15 +19,15 @@ def feet_detection(depthImg, quad_mask, height, feet_height):
     #max_highter_region : smooth the feet_region and find the mask of the max 5 contourArea in feet_region
     feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
     area = 0
-    max_highter_region = np.zeros(depthImg.shape)
+    max_highter_region = np.zeros(depthImg.shape, dtype=np.uint8)
     (_, cnts, _) = cv2.findContours(feet_region_smooth.astype(np.uint8)*255, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) 
     if len(cnts) >= 1 :
         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:5]
         for c in cnts:
             area = cv2.contourArea(c)
-            if area > 40 :#and area < 200:
+            if area > 30 :
                 #依Contours圖形建立mask
-                cv2.drawContours(max_highter_region, [c], -1, True, -1) #255        →白色, -1→塗滿
+                cv2.drawContours(max_highter_region, [c], -1, 255, -1) #255        →白色, -1→塗滿
                 
 #     fit the ellipse in max_highter_region, feet_region_with_Ellipses : mask of ellipse
     feet_region_with_Ellipses, ellipse_list = fit_Ellipses(max_highter_region.astype(np.uint8))
@@ -70,10 +70,10 @@ def fit_Ellipses(feet_region):
     # loop over our contours
     for c in cnts:
         area = cv2.contourArea(c)
-        if area > 40 and len(c) >= 5:
+        if area > 30 and len(c) >= 5:
             ellipse = cv2.fitEllipse(c)
             Area = Ellipse_area(ellipse[1][0], ellipse[1][1])
-            if Area > 40 :#and area/Area > 0.6:
+            if Area > 30 :#and area/Area > 0.6:
                 ellipse_List.append(cv2.fitEllipse(c))
                 cv2.ellipse(image, ellipse, (0,255,255), 2)
                 cv2.ellipse(feet_mask, ellipse, 255, -1)
@@ -86,22 +86,18 @@ def Ellipse_area(a2, b2):
     a = a2 / 2
     b = b2 / 2
     Area = 3.142 * a * b 
-    
-#     #長寬比
-#     if( a > b*2.5 or b > a*2.5):
-#         return 0
 
     return Area 
 
 def MorphologyEx(img):
-    kernel_size = 5 #7
+    kernel_size = 3 #7
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(kernel_size, kernel_size))
     #膨胀之后再腐蚀，在用来关闭前景对象里的小洞或小黑点
     #开运算用于移除由图像噪音形成的斑点
     opened = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
     closing = cv2.morphologyEx(img,cv2.MORPH_CLOSE,kernel)
     
-    kernel_size = 3
+    kernel_size = 5
     plane_blur = cv2.GaussianBlur(closing,(kernel_size, kernel_size), 0)
     return plane_blur
 
@@ -191,7 +187,7 @@ def feet_list_detection(depthImg, quad_mask, height = 0.05, feet_height = 0.1):
     #     find the list of feet
     feet_region_with_Ellipses, feet_list = find_feet_list(feet_region_with_Ellipses, ellipse_list)
     return feet_region_with_Ellipses, max_highter_region, ellipse_list, feet_list
-
+# for go forward type
 
 
 def find_center_and_vector_by_top(feet_top, img):
@@ -248,7 +244,7 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     
     slope_dist = np.sqrt(1 + V_slope*V_slope)
     #dist between a and a' is 10 pixels
-    dist = 10 # 10 pixel
+    dist = 20 # 10 pixel
     t = dist/slope_dist
 
     # point a' position in pixel coord
