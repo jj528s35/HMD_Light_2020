@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import cv2
 import _HMD_Light_function
 
+
 def feet_detection(depthImg, quad_mask, height, feet_height):
     """ find the feet mask and ellipse_list"""
     #find the highter_region mask which distance between resulting plane is > height

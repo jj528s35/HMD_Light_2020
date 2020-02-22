@@ -1,31 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from matplotlib.path import Path
 import _HMD_Light_function
 
-def feet_center_detection(depthImg, quad_mask, Confi_mask, height, feet_height, VR_user = True):
-    """ find the feet mask and ellipse_list"""
-    """ 
-        Need Interaction
-        VR_user: find the feet top(Ellipses up) in lower quad mask
-        non VR_user: find the feet top(Ellipses down) in upper quad mask
+def feet_detection(depthImg, quad_mask, last_feet_mask, Confi_mask, height, feet_height):
+    """在Mask內找 10cm > depth > 3cm 
+       Mask : Confi_mask and quad_mask (Confi_mask: 去掉雜訊多的部分,  quad_mask: RANSAC找到的平面)
+       
     """
-    if VR_user:
-        mask = np.zeros(depthImg.shape)
-        mask[0:depthImg.shape[0]//2,:] = False
-        mask[depthImg.shape[0]//2:-1,:] = True
-        quad_mask = np.logical_and(quad_mask, mask)
-    else:
-        mask = np.zeros(depthImg.shape)
-        mask[0:depthImg.shape[0]//2,:] = True
-        mask[depthImg.shape[0]//2:-1,:] = False
-        quad_mask = np.logical_and(quad_mask, mask)
-    
-    #find the highter_region mask which distance between resulting plane is > height
-    #find the lower_region mask which distance between resulting plane is < feet_height
-    #feet_region : region which distance between resulting plane is < feet_height and > height
-    #Then find the feet_region : the feet_region which is inside the quad mask
-    
+#     在Mask內找 10cm > depth > 3cm 
     highter_region = depthImg > height
     lower_region = depthImg < feet_height
     
@@ -33,16 +17,19 @@ def feet_center_detection(depthImg, quad_mask, Confi_mask, height, feet_height, 
     feet_region = np.logical_and(feet_region, quad_mask)
     feet_region = np.logical_and(feet_region, Confi_mask)
     
-    #max_highter_region : smooth the feet_region and find the mask of the max 5 contourArea in feet_region
+#      max_highter_region : smooth the feet_region and find the mask of the max 5 contourArea in feet_region
+#     Smooth the feet_region => 找面積 > 30的block
+#     Output: block數目，block中心點，block Contours
     feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
     area = 0
     feet_center = []
+    feet_cnts = []
     max_highter_region = np.zeros(depthImg.shape, dtype=np.uint8)
     image = cv2.cvtColor(max_highter_region.astype(np.uint8)*255, cv2.COLOR_GRAY2BGR)
     
     (_, cnts, _) = cv2.findContours(feet_region_smooth.astype(np.uint8)*255, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) 
     if len(cnts) >= 1 :
-        cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:2]
+        cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:5]
         for c in cnts:
             area = cv2.contourArea(c)
             if area > 30 :
@@ -53,13 +40,187 @@ def feet_center_detection(depthImg, quad_mask, Confi_mask, height, feet_height, 
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
                 feet_center.append((cX,cY))
+                feet_cnts.append(c)
      
     
     image = cv2.cvtColor(max_highter_region, cv2.COLOR_GRAY2BGR)
-    for i in range(len(feet_center)):
-        cv2.circle(image, (feet_center[i][0],feet_center[i][1]), 2 , (255,255,0) , -1)
+    feet_mask = np.zeros(depthImg.shape)
+    new_feet_mask = False
+    Non_VR_feet_top = []
+    
+    if len(feet_center) == 1:
+        #維持上一個frame
+        cv2.circle(image, (feet_center[0][0],feet_center[0][1]), 2 , (0,255,0) , -1)
+        feet_center = []
+        
+    if len(feet_center) == 2:
+        x1 = feet_center[0][0]
+        y1 = feet_center[0][1]
+        x2 = feet_center[1][0]
+        y2 = feet_center[1][1]
+        if (x1 - x2) == 0:
+            slope = 1
+        else:
+            slope = (y1 - y2)/(x1 - x2)
+        if abs(y1 - y2) < 40:#abs(slope) < 0.6: #雙腳平行
+            new_feet_mask = True
+            feet_mask = get_feet_mask(feet_cnts, depthImg.shape)
 
-    return image, max_highter_region, feet_center 
+            for i in range(len(feet_center)):
+                cv2.circle(image, (feet_center[i][0],feet_center[i][1]), 2 , (255,255,0) , -1)
+        else:
+            #兩腳y相差太大 => 行走或非VR user雙腳 => 維持上一frame
+            feet_center = []
+                
+    elif len(feet_center) > 2:
+        #VR 在last_feet_mask內再找一次腳，若找到2隻腳 => 更新feet mask
+        feet_center = []
+        ret,thresh = cv2.threshold(max_highter_region,200,True,cv2.THRESH_BINARY)
+        VR_feet_region = np.logical_and(thresh, last_feet_mask)
+        VR_region, VR_feet_cnts, VR_feet_center = find_feet_counter(VR_feet_region)
+        new_feet_mask = True
+        if len(VR_feet_cnts) == 2:
+            feet_mask = get_feet_mask(VR_feet_cnts, depthImg.shape)
+            feet_center = VR_feet_center
+            for i in range(len(VR_feet_cnts)):
+                cv2.circle(image, (VR_feet_center[i][0],VR_feet_center[i][1]), 2 , (255,255,0) , -1)
+        
+        #Non VR
+        # Non_VR_mask : feet mask最上方以上
+        #在Non_VR_mask內再找一次腳
+        top = last_feet_mask.argmax()//last_feet_mask.shape[1]
+        top_shift = 10
+        top = top - top_shift
+        Non_VR_mask = np.zeros((last_feet_mask.shape))
+        Non_VR_mask[:top,:] = True
+        Non_VR_feet_region = np.logical_and(thresh, Non_VR_mask)
+        
+        Non_VR_region, Non_VR_feet_cnts, Non_VR_feet_center = find_feet_counter(Non_VR_feet_region, min_area = 40)
+        for i in range(len(Non_VR_feet_center)):
+            cv2.circle(image, (Non_VR_feet_center[i][0],Non_VR_feet_center[i][1]), 2 , (255,0,255) , -1)
+        
+#         cv2.namedWindow("Non_VR_feet_region", cv2.WINDOW_NORMAL)
+#         cv2.imshow("Non_VR_feet_region", Non_VR_mask.astype(np.uint8)*255)
+#         cv2.waitKey(1)
+
+    return image, max_highter_region, new_feet_mask, feet_mask, feet_center 
+
+def get_feet_mask(feet_cnts, shape):
+    c = feet_cnts[0]
+    leftmost = c[:,:,0].min()
+    rightmost = c[:,:,0].max()
+    top = c[:,:,1].min()
+    down = c[:,:,1].max()
+
+    c = feet_cnts[1]
+    if c[:,:,0].min() < leftmost:
+        leftmost = c[:,:,0].min()
+    if c[:,:,0].max() > rightmost:
+        rightmost = c[:,:,0].max()
+    if c[:,:,1].min() < top:
+        top = c[:,:,1].min()
+    if c[:,:,1].max() > down:
+        down = c[:,:,1].max()
+        
+    
+    height = shape[0]
+    width = shape[1]
+    mask = np.ones((height,width))
+    polygon = []
+    
+    polygon=[(top,leftmost), (top,rightmost), (down,rightmost), (down,leftmost)]
+    poly_path=Path(polygon)
+
+    x, y = np.mgrid[:height, :width]
+    coors=np.hstack((x.reshape(-1, 1), y.reshape(-1,1))) # coors.shape is (4000000,2)
+
+    mask = poly_path.contains_points(coors)
+    mask = mask.reshape(height, width)
+    
+    return mask
+
+def find_feet_counter(feet_region, min_area = 30):
+    feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
+    area = 0
+    feet_center = []
+    feet_cnts = []
+    max_highter_region = np.zeros(feet_region.shape, dtype=np.uint8)
+    image = cv2.cvtColor(max_highter_region.astype(np.uint8)*255, cv2.COLOR_GRAY2BGR)
+    
+    (_, cnts, _) = cv2.findContours(feet_region_smooth.astype(np.uint8)*255, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) 
+    if len(cnts) >= 1 :
+        cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:5]
+        for c in cnts:
+            area = cv2.contourArea(c)
+            if area > min_area :
+                #依Contours圖形建立mask
+                cv2.drawContours(max_highter_region, [c], -1, 255, -1) #255        →白色, -1→塗滿
+                # compute the center of the contour
+                M = cv2.moments(c)
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                feet_center.append((cX,cY))
+                feet_cnts.append(c)
+                
+    return max_highter_region, feet_cnts, feet_center
+
+# def feet_center_detection(depthImg, quad_mask, Confi_mask, height, feet_height, VR_user = True):
+#     """ find the feet mask and ellipse_list"""
+#     """ 
+#         Need Interaction
+#         VR_user: find the feet top(Ellipses up) in lower quad mask
+#         non VR_user: find the feet top(Ellipses down) in upper quad mask
+#     """
+#     if VR_user:
+#         mask = np.zeros(depthImg.shape)
+#         mask[0:depthImg.shape[0]//2,:] = False
+#         mask[depthImg.shape[0]//2:-1,:] = True
+#         quad_mask = np.logical_and(quad_mask, mask)
+#     else:
+#         mask = np.zeros(depthImg.shape)
+#         mask[0:depthImg.shape[0]//2,:] = True
+#         mask[depthImg.shape[0]//2:-1,:] = False
+#         quad_mask = np.logical_and(quad_mask, mask)
+    
+#     #find the highter_region mask which distance between resulting plane is > height
+#     #find the lower_region mask which distance between resulting plane is < feet_height
+#     #feet_region : region which distance between resulting plane is < feet_height and > height
+#     #Then find the feet_region : the feet_region which is inside the quad mask
+    
+#     highter_region = depthImg > height
+#     lower_region = depthImg < feet_height
+    
+#     feet_region = np.logical_and(highter_region, lower_region)
+#     feet_region = np.logical_and(feet_region, quad_mask)
+#     feet_region = np.logical_and(feet_region, Confi_mask)
+    
+#     #max_highter_region : smooth the feet_region and find the mask of the max 5 contourArea in feet_region
+#     feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))
+#     area = 0
+#     feet_center = []
+#     max_highter_region = np.zeros(depthImg.shape, dtype=np.uint8)
+#     image = cv2.cvtColor(max_highter_region.astype(np.uint8)*255, cv2.COLOR_GRAY2BGR)
+    
+#     (_, cnts, _) = cv2.findContours(feet_region_smooth.astype(np.uint8)*255, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE) 
+#     if len(cnts) >= 1 :
+#         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:2]
+#         for c in cnts:
+#             area = cv2.contourArea(c)
+#             if area > 30 :
+#                 #依Contours圖形建立mask
+#                 cv2.drawContours(max_highter_region, [c], -1, 255, -1) #255        →白色, -1→塗滿
+#                 # compute the center of the contour
+#                 M = cv2.moments(c)
+#                 cX = int(M["m10"] / M["m00"])
+#                 cY = int(M["m01"] / M["m00"])
+#                 feet_center.append((cX,cY))
+     
+    
+#     image = cv2.cvtColor(max_highter_region, cv2.COLOR_GRAY2BGR)
+#     for i in range(len(feet_center)):
+#         cv2.circle(image, (feet_center[i][0],feet_center[i][1]), 2 , (255,255,0) , -1)
+
+#     return image, max_highter_region, feet_center 
 
 
 
