@@ -97,13 +97,16 @@ def feet_detection(depthImg, quad_mask, last_feet_mask, Confi_mask, height, feet
         
         Non_VR_region, Non_VR_feet_cnts, Non_VR_feet_center = find_feet_counter(Non_VR_feet_region, min_area = 40)
         for i in range(len(Non_VR_feet_center)):
-            cv2.circle(image, (Non_VR_feet_center[i][0],Non_VR_feet_center[i][1]), 2 , (255,0,255) , -1)
+#             cv2.circle(image, (Non_VR_feet_center[i][0],Non_VR_feet_center[i][1]), 2 , (255,0,255) , -1)
+            f_top = tuple(Non_VR_feet_cnts[i][:,0][Non_VR_feet_cnts[i][:,:,1].argmax()])
+            Non_VR_feet_top.append(f_top)
+            cv2.circle(image, (f_top[0],f_top[1]), 2 , (0,0,255) , -1)
         
 #         cv2.namedWindow("Non_VR_feet_region", cv2.WINDOW_NORMAL)
 #         cv2.imshow("Non_VR_feet_region", Non_VR_mask.astype(np.uint8)*255)
 #         cv2.waitKey(1)
 
-    return image, max_highter_region, new_feet_mask, feet_mask, feet_center 
+    return image, max_highter_region, new_feet_mask, feet_mask, feet_center, Non_VR_feet_top 
 
 def get_feet_mask(feet_cnts, shape):
     c = feet_cnts[0]
@@ -281,11 +284,12 @@ def boundary_check(x, boundary):
 def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, plane_mask, plane_size = 0.1):
     success = True
     if (maxX - minX) == 0:
-        slope = 1
+        slope = (maxY - minY)/1
     else:
         slope = (maxY - minY)/(maxX - minX)
+        
     if slope == 0:
-        slope = 1
+        slope = 1/(maxX - minX)
         
     V_slope = -1/slope
     
@@ -321,14 +325,20 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
 
 #     #check if it have value
     if(plane_mask[_y,_x] == False):
-        _x, _y = _HMD_Light_function.find_points_on_plane(_y,_x, plane_mask, kernel_size = 7)
+        _x, _y = _HMD_Light_function.find_points_on_plane(_y,_x, plane_mask, kernel_size = 5)
         if(plane_mask[_y,_x] == False):
+#             print("1")
             success = False
+#         else:
+#             cv2.circle(img, (_x,_y), 2 , (0,255,255) , -1)
 
     if(plane_mask[_ny,_nx] == False):
-        _nx, _ny = _HMD_Light_function.find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 7)
+        _nx, _ny = _HMD_Light_function.find_points_on_plane(_ny,_nx, plane_mask, kernel_size = 5)
         if(plane_mask[_ny,_nx] == False):
+#             print("2")
             success = False
+     
+    #     cv2.circle(img, (_nx, _ny), 2 , (0,0,255) , -1)
 
     if success == False:
         return success, img, 0, 0
