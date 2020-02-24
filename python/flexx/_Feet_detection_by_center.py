@@ -4,6 +4,14 @@ import cv2
 from matplotlib.path import Path
 import _HMD_Light_function
 
+####################################################################################################
+#20200223 feet detection 第二版演算法
+#依照blob數目決定
+#blob == 1 維持上一個frame
+#blob == 2 and y距離<40 更新vr_user_feet_center位置 & feet_mask
+#blob == 3 
+#          VR user: 在上一個frame中的feet_mask中找feet，若成功找到2個blob，更新vr_user_feet_center位置 & feet_mask
+#          non VR user: 在feet_mask_inv 中找feet，找feet最低點，視為non VR user feet top
 def feet_detection(depthImg, quad_mask, last_feet_mask, Confi_mask, height, feet_height):
     """在Mask內找 10cm > depth > 3cm 
        Mask : Confi_mask and quad_mask (Confi_mask: 去掉雜訊多的部分,  quad_mask: RANSAC找到的平面)
@@ -376,4 +384,8 @@ def find_plane_center(centerX, centerY, minX, minY, maxX, maxY, img, points_3d, 
     return success, img, u_,v_
 
 
-
+####################################################################################################
+#20200224 feet detection 新版演算法
+# 依據projector 投影到地面位置y，橫切一條線切割depth image
+# 線以上：non VR user
+# 線以下: VR user
