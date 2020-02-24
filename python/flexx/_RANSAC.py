@@ -109,7 +109,7 @@ def RANSAM(points3D, Confidence_img, ransac_iteration = 1000, inliner_threshold 
             best_depthImage = depthImage
             best_sampts = sampts
           
-        if (abs(inliner_num - last_inliner_num) < 1000):
+        if (abs(inliner_num - last_inliner_num) < 1000 and inliner_num> 20000):
             best_inlinernum = inliner_num
             best_plane = np.array([a,b,c,d])
             best_plane_mask = inliner_mask
