@@ -381,7 +381,7 @@ def find_target_plane(img, quad_mask, plane_mask, points_3d, k = 4):
         if len(x) > 5:
             _x = np.zeros((len(x)-1), dtype=int)
             _y = np.zeros((len(y)-1), dtype=int)
-            print(x,y)
+#             print(x,y)
             j = 0
             for i in range(len(x)):
                 #boundary

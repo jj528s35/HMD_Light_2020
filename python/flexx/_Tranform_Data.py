@@ -127,27 +127,29 @@ def send_project_type(_type):
     
 def receive_data(cam):
     stop = False
+    Type = -1
     data = socket_sender.receive()
     if(data != None):
         print("receive " + data)
-        stop = ParseData(data, cam)
-    return stop
+        stop, Type = ParseData(data, cam)
+    return stop, Type
         
 def ParseData(data, cam):
     stop = False
+    Type = -1
     # split the string at ' '
     msg = data.split(' ')
     # get the first slice of the list
     data_type = int(msg[0])
     
-    if(data_type == 1):# change user case
+    if(data_type == 1):# change user case / Projecting Type
         fps = int(msg[1])
-        change_user_case(fps,cam)
+        Type = change_user_case(fps,cam)
     elif(data_type == 2):
         socket_sender.close_socket()
         stop = True
     
-    return stop
+    return stop, Type
 
 
 # data receive from unity
@@ -156,9 +158,12 @@ def ParseData(data, cam):
 def change_user_case(fps,cam):
     if(fps == 45):
         cam.setUseCase('MODE_5_45FPS_500')
+        Type = 0
     elif(fps == 35):
         cam.setUseCase('MODE_5_35FPS_600')
+        Type = 1
     print("UseCase",cam.getCurrentUseCase())
+    return Type
 
 
 # In[ ]:
