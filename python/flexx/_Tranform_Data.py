@@ -124,6 +124,23 @@ def send_project_type(_type):
 #     print('send plane_eq:', data)
     socket_sender.send(data)
     
+
+
+def send_touch(touch, points_3d):
+    data = ""
+    temp4 = ['9 ']
+    touch_num = len(touch)
+    temp4.append("%d "%(touch_num))
+    for i in range(touch_num): 
+        feet_x = touch[i][0]
+        feet_y = touch[i][1]
+        x = points_3d[feet_y, feet_x,0]
+        y = points_3d[feet_y, feet_x,1]
+        z = points_3d[feet_y, feet_x,2]
+        temp4.append("%f %f %f "%(x, y, z))
+    data = data.join(temp4)
+#     print('send plane point:', data)
+    socket_sender.send(data)
     
 def receive_data(cam):
     stop = False

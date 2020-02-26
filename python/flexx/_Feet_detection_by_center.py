@@ -428,7 +428,7 @@ def get_feet_detection_line(plane_eq):
     
     
 
-def feet_detection_with_line(depthImg, quad_mask, Confi_mask, top_line, height, feet_height):
+def feet_detection_with_line(depthImg, quad_mask, Confi_mask, top_line, height, feet_height, touch_detect_heigh = 0.1):
     """在Mask內找 10cm > depth > 3cm 
        Mask : Confi_mask and quad_mask (Confi_mask: 去掉雜訊多的部分,  quad_mask: RANSAC找到的平面)
        
@@ -475,10 +475,15 @@ def feet_detection_with_line(depthImg, quad_mask, Confi_mask, top_line, height, 
     Non_VR_feet_image = cv2.cvtColor(Non_VR_region.astype(np.uint8), cv2.COLOR_GRAY2BGR)
     
     Non_VR_feet_top = []
+    Non_VR_feet_touch = []
     for i in range(len(Non_VR_feet_center)):
         f_top = tuple(Non_VR_feet_cnts[i][:,0][Non_VR_feet_cnts[i][:,:,1].argmax()])
         Non_VR_feet_top.append(f_top)
-        cv2.circle(Non_VR_feet_image, (f_top[0],f_top[1]), 2 , (0,0,255) , -1)
+        if depthImg[f_top[1],f_top[0]] > touch_detect_heigh:# > 5cm
+            cv2.circle(Non_VR_feet_image, (f_top[0],f_top[1]), 2 , (255,0,0) , -1)
+        else :# <= 5cm
+            cv2.circle(Non_VR_feet_image, (f_top[0],f_top[1]), 2 , (0,0,255) , -1)
+            Non_VR_feet_touch.append(f_top)
     
     
     # merge 2 image
@@ -487,7 +492,7 @@ def feet_detection_with_line(depthImg, quad_mask, Confi_mask, top_line, height, 
     image[:top_line-top_shift,:,:] = Non_VR_feet_image[:top_line-top_shift,:,:]
     
     
-    return image, VR_feet_image, VR_feet_center, Non_VR_feet_image, Non_VR_feet_top
+    return image, VR_feet_image, VR_feet_center, Non_VR_feet_image, Non_VR_feet_top, Non_VR_feet_touch
 
 def _find_feet_counter(feet_region, min_area = 30):
     feet_region_smooth = MorphologyEx(feet_region.astype(np.uint8))

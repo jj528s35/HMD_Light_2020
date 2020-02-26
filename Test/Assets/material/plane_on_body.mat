@@ -50,7 +50,7 @@ Material:
     - _EmissionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 15, y: 15}
-        m_Offset: {x: 0.4, y: -4.65}
+        m_Offset: {x: 0.67, y: -4.6}
     - _MainBump:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -58,7 +58,7 @@ Material:
     - _MainTex:
         m_Texture: {fileID: 8400000, guid: 8ee0a49fe9ae94b4d814ad5d1228e7ce, type: 2}
         m_Scale: {x: 15, y: 15}
-        m_Offset: {x: 0.4, y: -4.65}
+        m_Offset: {x: 0.67, y: -4.6}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}

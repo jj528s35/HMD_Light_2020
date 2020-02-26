@@ -57,7 +57,7 @@ public class cameraSetup : MonoBehaviour
 
         mainCamera.focalLength = _f; 
 
-        mainCamera.lensShift = new Vector2(-0.005f, 0.165f);     
+        mainCamera.lensShift = new Vector2(-0.005f, 0.1f);     
  
     }
 

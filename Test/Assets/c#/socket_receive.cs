@@ -22,6 +22,11 @@ public class socket_receive : MonoBehaviour
     public Vector3 targetpos;
     public Vector3 plane_forward_vector;
 
+    [Header("socket receive interaction")]
+    public Vector3[] touch_points = new Vector3[2];
+    public int touch_points_num = 1;
+
+
     [Header("socket receive project on body")]
     public Vector3[] target_plane = new Vector3[25];
     public int target_plane_points_num = 25;
@@ -50,7 +55,8 @@ public class socket_receive : MonoBehaviour
         targetpos_type,
         plane_forward_Type,
         target_plane_Type,
-        project_type_Type
+        project_type_Type,
+        feet_touch_Type
     };
     
     // Start is called before the first frame update
@@ -289,6 +295,27 @@ public class socket_receive : MonoBehaviour
             {
                 Debug.LogFormat("reveice project_type_Type equation, data length: {0}", values.Length);
                 //Debug.LogFormat("plane equation format is wrong: {0}", data);
+            }
+        }
+        if(dataType == (int)ReceiveType.feet_touch_Type)
+        {
+            touch_points_num = int.Parse(values[1]);
+            
+            if ((values.Length-3) == touch_points_num*3)
+            {
+                for (int i = 0; i < touch_points_num; i++)
+                {
+                    float x = float.Parse(values[i*3 + 2]);
+                    float y = float.Parse(values[i*3 + 3]);
+                    float z = float.Parse(values[i*3 + 4]);
+                    touch_points[i] = new Vector3(x, y, z);
+                    
+                }
+            }
+            else
+            {
+                Debug.LogFormat("reveice feet_touch_Type, data length: {0}", values.Length);
+                //Debug.LogFormat("feet_touch_Type format is wrong: {0}", data);
             }
         }
     }

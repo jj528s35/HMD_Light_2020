@@ -19,7 +19,15 @@ public class plane_pos_rot : MonoBehaviour
     void Update()
     {
         int num = receive_data.target_plane_points_num;
-        Vector3[] plane_points = receive_data.target_plane;
+        Vector3[] plane_points = new Vector3[25];
+        // plane_points = receive_data.target_plane;
+
+        for(int i = 0; i < num; i++)
+        {
+            plane_points[i][0] = receive_data.target_plane[i][0];
+            plane_points[i][1] = -receive_data.target_plane[i][1];
+            plane_points[i][2] = receive_data.target_plane[i][2];
+        }
 
         DoCreatPloygonMesh2(plane_points, num);
 
@@ -49,13 +57,13 @@ public class plane_pos_rot : MonoBehaviour
             if (i % 5 == 4) continue;
 
             tTriangles.Add(i);
-            tTriangles.Add(i + 1);
             tTriangles.Add(i + 6);
+            tTriangles.Add(i + 1);
 
             // lower left triangle
             tTriangles.Add(i);
-            tTriangles.Add(i + 6);
-            tTriangles.Add(i + 5); 
+            tTriangles.Add(i + 5);
+            tTriangles.Add(i + 6); 
         }
  
         //赋值多边形顶点
