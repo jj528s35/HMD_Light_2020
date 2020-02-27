@@ -142,6 +142,15 @@ def send_touch(touch, points_3d):
 #     print('send plane point:', data)
     socket_sender.send(data)
     
+def send_forward_points(x, y, fx, fy, points_3d):
+    data = ""
+    temp4 = ['10 ']
+    temp4.append("%f %f %f %f %f %f"%\
+                 (points_3d[fy,fx,0], points_3d[fy,fx,1], points_3d[fy,fx,2],points_3d[y,x,0],points_3d[y,x,1],points_3d[y,x,2]))
+    data = data.join(temp4)
+#     print('send plane point:', data)
+    socket_sender.send(data)
+    
 def receive_data(cam):
     stop = False
     Type = -1

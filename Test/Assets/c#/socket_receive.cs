@@ -21,6 +21,7 @@ public class socket_receive : MonoBehaviour
     public float[] plane_equation = new float[4];
     public Vector3 targetpos;
     public Vector3 plane_forward_vector;
+    public Vector3[] plane_forward_points = new Vector3[2];
 
     [Header("socket receive interaction")]
     public Vector3[] touch_points = new Vector3[2];
@@ -56,7 +57,8 @@ public class socket_receive : MonoBehaviour
         plane_forward_Type,
         target_plane_Type,
         project_type_Type,
-        feet_touch_Type
+        feet_touch_Type,
+        plane_forward_points_Type
     };
     
     // Start is called before the first frame update
@@ -316,6 +318,28 @@ public class socket_receive : MonoBehaviour
             {
                 Debug.LogFormat("reveice feet_touch_Type, data length: {0}", values.Length);
                 //Debug.LogFormat("feet_touch_Type format is wrong: {0}", data);
+            }
+        }
+        else if(dataType == (int)ReceiveType.plane_forward_points_Type)
+        {
+            int center_num = 6;
+            if (values.Length == center_num + 1)
+            {
+                float a = float.Parse(values[1]);
+                float b = -float.Parse(values[2]);
+                float c = float.Parse(values[3]);
+                plane_forward_points[0] = new Vector3(a, b, c);
+
+                a = float.Parse(values[4]);
+                b = -float.Parse(values[5]);
+                c = float.Parse(values[6]);
+                plane_forward_points[1] = new Vector3(a, b, c);
+                
+            }
+            else
+            {
+                Debug.LogFormat("reveice plane_forward_vector, data length: {0}", values.Length);
+                //Debug.LogFormat("plane_center format is wrong: {0}", data);
             }
         }
     }
