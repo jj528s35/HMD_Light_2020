@@ -6,6 +6,7 @@ public class Finf_circle : MonoBehaviour
 {
     public GameObject d1,d2,d3;
     public GameObject visual,plane;
+    public Vector3 n_vector;
     private Vector3 A,B,C;
     private LineRenderer lineRenderer1,lineRenderer2, lineRenderer3;
     // Start is called before the first frame update
@@ -20,6 +21,7 @@ public class Finf_circle : MonoBehaviour
 
         PlaneFrom3Points(out Vector3 n, out Vector3 planePoint, A, B, C);
         plane.transform.up = n;
+        n_vector = n;
 
         Vector3 p1 = (A + B)/2; 
         Vector3 v1 = -Vector3.Cross(v_AB,n);
@@ -70,6 +72,7 @@ public class Finf_circle : MonoBehaviour
 
         PlaneFrom3Points(out Vector3 n, out Vector3 planePoint, A, B, C);
         plane.transform.up = n;
+        n_vector = n;
 
         Vector3 p1 = (A + B)/2; 
         Vector3 v1 = -Vector3.Cross(v_AB,n);

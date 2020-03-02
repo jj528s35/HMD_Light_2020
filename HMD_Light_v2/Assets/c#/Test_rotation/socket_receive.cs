@@ -80,7 +80,7 @@ public class socket_receive : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Alpha0))
         {
             SendMessage("0 Hi, this is server!");
         }

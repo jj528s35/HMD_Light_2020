@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/servo_control/scenes/servo.unity
+- path: Assets/Scenes/HMD_Light_main.unity
   isLoaded: 1
   isActive: 1
