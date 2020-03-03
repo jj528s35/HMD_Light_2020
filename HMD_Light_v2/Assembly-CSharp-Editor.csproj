@@ -86,6 +86,11 @@
      <Compile Include="Assets\UniOSC\Scripts\Example.Components\Editor\UniOSCToggleEditor.cs" />
      <Compile Include="Assets\UniOSC\Scripts\ScriptableObjects\Editor\UniOSCMappingFileObjEditor.cs" />
      <Compile Include="Assets\UniOSC\Scripts\ScriptableObjects\Editor\UniOSCSessionFileObjEditor.cs" />
+     <Compile Include="Assets\ZED\Editor\Scripts\BuildScript.cs" />
+     <Compile Include="Assets\ZED\Editor\Scripts\ZEDCameraEditor.cs" />
+     <Compile Include="Assets\ZED\Editor\Scripts\ZEDCameraSettingsEditor.cs" />
+     <Compile Include="Assets\ZED\Editor\Scripts\ZEDPluginInspector.cs" />
+     <Compile Include="Assets\ZED\Examples\GreenScreen\Editor\GreenScreenEditor.cs" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.3f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>
@@ -278,6 +283,9 @@
  <Reference Include="UnityEditor.WindowsStandalone.Extensions">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.3f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
  </Reference>
+ <Reference Include="OSCsharp">
+ <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Assets/UniOSC/Lib/OSCsharp.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEditor.Advertisements">
  <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Library/PackageCache/com.unity.ads@2.3.1/Editor/UnityEditor.Advertisements.dll</HintPath>
  </Reference>
@@ -298,9 +306,6 @@
  </Reference>
  <Reference Include="UnityEditor.Purchasing">
  <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Library/PackageCache/com.unity.purchasing@2.0.6/Editor/UnityEditor.Purchasing.dll</HintPath>
- </Reference>
- <Reference Include="OSCsharp">
- <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Assets/UniOSC/Lib/OSCsharp.dll</HintPath>
  </Reference>
  <Reference Include="nunit.framework">
  <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Library/PackageCache/com.unity.ext.nunit@1.0.0/net35/unity-custom/nunit.framework.dll</HintPath>
@@ -713,6 +718,14 @@
       <Project>{be59b95b-e4e1-d15a-d61f-4250b2e852f8}</Project>
       <Name>Unity.Rider.Editor</Name>
     </ProjectReference>
+    <ProjectReference Include="Oculus.VR.Editor.csproj">
+      <Project>{6c9a0e6d-cc4a-2644-4a9f-61a0592521d3}</Project>
+      <Name>Oculus.VR.Editor</Name>
+    </ProjectReference>
+    <ProjectReference Include="Oculus.VR.Scripts.Editor.csproj">
+      <Project>{ee32c9a1-a38f-4006-9838-b0d82b71f52c}</Project>
+      <Name>Oculus.VR.Scripts.Editor</Name>
+    </ProjectReference>
     <ProjectReference Include="Unity.2D.Sprite.Editor.csproj">
       <Project>{da44fdb2-af2e-ac25-43a5-cb8442bfc263}</Project>
       <Name>Unity.2D.Sprite.Editor</Name>
@@ -720,6 +733,10 @@
     <ProjectReference Include="Unity.2D.Tilemap.Editor.csproj">
       <Project>{a6795e09-d9be-80fb-1a87-ed24e4887f5d}</Project>
       <Name>Unity.2D.Tilemap.Editor</Name>
+    </ProjectReference>
+    <ProjectReference Include="Oculus.VR.csproj">
+      <Project>{3b2613bc-c6b7-6442-da50-522fd911d041}</Project>
+      <Name>Oculus.VR</Name>
     </ProjectReference>
     <ProjectReference Include="UnityEditor.SpatialTracking.csproj">
       <Project>{1c7ac4b7-1489-5cc5-8082-f3ecae3d20fb}</Project>
@@ -748,18 +765,6 @@
     <ProjectReference Include="com.unity.multiplayer-hlapi.Runtime.csproj">
       <Project>{e7c081e9-caa0-9d8e-0b5e-727576a839d6}</Project>
       <Name>com.unity.multiplayer-hlapi.Runtime</Name>
-    </ProjectReference>
-    <ProjectReference Include="Oculus.VR.Editor.csproj">
-      <Project>{6c9a0e6d-cc4a-2644-4a9f-61a0592521d3}</Project>
-      <Name>Oculus.VR.Editor</Name>
-    </ProjectReference>
-    <ProjectReference Include="Oculus.VR.Scripts.Editor.csproj">
-      <Project>{ee32c9a1-a38f-4006-9838-b0d82b71f52c}</Project>
-      <Name>Oculus.VR.Scripts.Editor</Name>
-    </ProjectReference>
-    <ProjectReference Include="Oculus.VR.csproj">
-      <Project>{3b2613bc-c6b7-6442-da50-522fd911d041}</Project>
-      <Name>Oculus.VR</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

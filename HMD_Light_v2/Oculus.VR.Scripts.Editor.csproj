@@ -242,6 +242,9 @@
  <Reference Include="UnityEditor.WindowsStandalone.Extensions">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2019.3.3f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll</HintPath>
  </Reference>
+ <Reference Include="OSCsharp">
+ <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Assets/UniOSC/Lib/OSCsharp.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEditor.Advertisements">
  <HintPath>C:/Users/Cross/Desktop/LabProject/HMD_Light/HMD_Light_2020/HMD_Light_v2/Library/PackageCache/com.unity.ads@2.3.1/Editor/UnityEditor.Advertisements.dll</HintPath>
  </Reference>

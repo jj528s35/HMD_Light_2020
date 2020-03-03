@@ -12,7 +12,14 @@ public class motor_controller : MonoBehaviour
     public float angle, diff_angle;
     public ServoController servo;
     private float servo2angle, init_angle;
-    private Vector3 init_rot_x;
+    private Vector3 init_rot_x, init_forward;
+    public GameObject Projector;
+    public GameObject zed;
+    private Vector3 zed_rot;
+    [Header("Fake Motor rotation")]
+    public Camera f_Projector;
+    public GameObject f_motor;
+    public GameObject plane;
 
     [Header("OSC Motor control")]
     public GameObject window_top;
@@ -22,7 +29,7 @@ public class motor_controller : MonoBehaviour
     public GameObject depth_child;
 
     [Header("Projecting area")]
-    public Camera Projector;
+    public Camera Projector_cam;
     public GameObject Projector_area;
 
 
@@ -34,43 +41,43 @@ public class motor_controller : MonoBehaviour
 
         //init the motor angle
         servo.pitchPos = inti_sevoAngle;
+        servo.motor_singal();
         init_angle = (1000 - inti_sevoAngle)/servo2angle;
         angle = init_angle;
         motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
 
-        init_rot_x = Projector.transform.rotation.eulerAngles;
-        init_rot_x = new Vector3(init_rot_x[0], 0, 0);
+        f_motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
+
+        /*init_rot_x = Projector.transform.rotation.eulerAngles;
+        init_forward = Projector.transform.forward;
+        zed_rot = zed.transform.rotation.eulerAngles;*/
     }
 
     // Update is called once per frame
     void Update()
     {
-        //OSC_motor_control(window_top.transform.position, window_down.transform.position);
-        //angle = (1000 - servo.pitchPos)/servo2angle;
-
-        diff_angle = motor_control(init_rot_x);
-        angle = angle + diff_angle;
-        servo.pitchPos = (int)(1000 - angle * servo2angle);
-
-        // Sets the transforms rotation to rotate 30 degrees around the y-axis
-        motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
         
-
+        //motor_control(init_rot_x);
+         motor_angle();
+        
         //show Projecting_area
         Projecting_area();
 
+
+
         
-        if(Input.GetKeyDown(KeyCode.Space))
+        /*if(Input.GetKeyDown(KeyCode.Space))
         {
             //set init value
             servo.pitchPos = inti_sevoAngle;
+            servo.motor_singal();
             init_angle = (1000 - inti_sevoAngle)/servo2angle;
             angle = init_angle;
             motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
 
             init_rot_x = Projector.transform.rotation.eulerAngles;
-            init_rot_x = new Vector3(init_rot_x[0], 0, 0);
-        }
+            zed_rot = zed.transform.rotation.eulerAngles;
+        }*/
 
         
     }
@@ -86,42 +93,152 @@ public class motor_controller : MonoBehaviour
         //ex: t.transform.position = set_world_to_localpos(new Vector3(0,0,0));
     }
 
-    public float motor_control(Vector3 init_rot_x)
+    public void motor_angle()
     {
+        float theta = 1;
+        bool first = true;
+        int w = Projector_cam.pixelWidth;
+        int h = Projector_cam.pixelHeight;
+        
+        // only hit the floor
+        int layerMask = 1 << 9;
+
+        bool sameDirection = true;
+        float Rot_down = 1;
+        float rot_angle = 0;
+
+        RaycastHit hit;
+        Ray ray = Projector_cam.ScreenPointToRay(new Vector3(w/2, h/2, 0));
+        // do we hit floor?
+        if (Physics.Raycast(ray, out hit, 10f, layerMask)) 
+        {
+            Vector3 dir = hit.point - plane.transform.position;
+            float dist = Vector3.Distance(hit.point, plane.transform.position);
+            float new_dist = dist;
+            float ori_dist = dist;//for debug
+
+            float dot = Vector3.Dot( dir, plane.transform.forward );
+            sameDirection = dot >= 0; 
+            if(sameDirection) Rot_down = 1; // same as forward dir(blue axix) => rotation down
+            else Rot_down = -1;
+
+            while(new_dist <= dist && (first ||(dist - new_dist) >= 0.01f))
+            {
+                first = false;
+                dist = new_dist;
+                rot_angle = theta * Rot_down;
+                
+                f_motor.transform.localRotation = Quaternion.AngleAxis(angle + rot_angle, rot_vector);
+
+                ray = f_Projector.ScreenPointToRay(new Vector3(w/2, h/2, 0));
+                if (Physics.Raycast(ray, out hit, 10f, layerMask))
+                {
+                    new_dist = Vector3.Distance(hit.point, plane.transform.position);
+                    //print(dist-new_dist);
+                } 
+                else break;
+
+                theta++;              
+            }
+
+            if(ori_dist - dist > 0.05f)
+            {
+                print(ori_dist-dist);
+                rot_angle = (theta-1) * Rot_down;
+                print(angle+" "+rot_angle);
+                angle = angle + rot_angle;
+                motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
+                f_motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
+                servo.pitchPos = (int)(1000 - angle * servo2angle);
+                servo.motor_singal();
+            }
+            else f_motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
+            
+            
+            
+        }
+        else 
+            return;
+    }
+
+    public void motor_control(Vector3 init_rot_x)
+    {
+        //print(init_rot_x + " " + Projector.transform.rotation.eulerAngles);
         Vector3 rot_x = Projector.transform.rotation.eulerAngles;
         rot_x = new Vector3(rot_x[0], 0, 0);
 
         Quaternion init_q = Quaternion.Euler(init_rot_x[0], 0, 0);
         Quaternion q = Quaternion.Euler(rot_x[0], 0, 0);
-        float AngleDiff =  Quaternion.Angle(init_q , q);
+        float Angle_Diff =  Quaternion.Angle(init_q , q);
         
         // get the signed difference in these angles
         var angleDiff = Mathf.DeltaAngle(init_rot_x[0], rot_x[0]);
 
-        if(angleDiff > 0)
-            AngleDiff = - AngleDiff;
+        var forwardA = init_q * Vector3.forward;
+        var forwardB = q * Vector3.forward;
 
-        print(init_rot_x[0] + " " + rot_x[0] + " " + AngleDiff + " " + angleDiff);
+        // get a numeric angle for each vector, on the X-Z plane (relative to world forward)
+        var angleA = Mathf.Atan2(forwardA.y, forwardA.z)*Mathf.Rad2Deg;
+        var angleB = Mathf.Atan2(forwardB.y, forwardB.z)*Mathf.Rad2Deg;
 
-        return AngleDiff;
+        // get the signed difference in these angles
+        var angleDiff_ = Mathf.DeltaAngle( angleA, angleB );
+        //print(angleDiff_);
+
+        //print(init_rot_x + " " + Projector.transform.rotation.eulerAngles);
+        Vector3 zrot_x = zed.transform.rotation.eulerAngles;
+        zrot_x = new Vector3(zrot_x[0], 0, 0);
+        // get the signed difference in these angles
+        var zangleDiff = Mathf.DeltaAngle(zed_rot[0], zrot_x[0]);
+        print(zangleDiff);
+
+        
+        if(zangleDiff > 0)//-10
+            Angle_Diff = - Angle_Diff;
+        else
+            Angle_Diff = Angle_Diff;
+
+        /*if(Mathf.Abs(zangleDiff)<1) 
+            Angle_Diff = 0;
+        else zed_rot = zrot_x;*/
+
+        diff_angle = Angle_Diff;
+        print(angle);
+        angle = angle + diff_angle;
+        print(angle);
+        
+        if(angle > 360f) angle = angle % 360;
+        servo.pitchPos = (int)(1000 - angle * servo2angle);
+        servo.motor_singal();
+
+        // Sets the transforms rotation to rotate 30 degrees around the y-axis
+        motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
+
+        print(init_rot_x[0] + " " + rot_x[0] + " " + Angle_Diff + " " + angleDiff + " " +  Projector.transform.rotation.eulerAngles[0]);
+        
+        zed_rot = zrot_x;
     }
+
+    
 
     public void OSC_motor_control(Vector3 top, Vector3 down)
     {
-        Vector3 screenPos = Projector.WorldToScreenPoint(top);
-        int projecting_area_top = Projector.pixelHeight - 1;
+        Vector3 screenPos = Projector_cam.WorldToScreenPoint(top);
+        int projecting_area_top = Projector_cam.pixelHeight - 1;
         if(screenPos.y > projecting_area_top)
         {
             Debug.Log("Rotate motor up");
             servo.motor_up();
         }
 
-        screenPos = Projector.WorldToScreenPoint(down);
+        screenPos = Projector_cam.WorldToScreenPoint(down);
         if(screenPos.y < 0)
         {
             Debug.Log("Rotate motor down");
             servo.motor_down();
         }
+        //OSC_motor_control(window_top.transform.position, window_down.transform.position);
+        //angle = (1000 - servo.pitchPos)/servo2angle;
     }
 
 
@@ -134,14 +251,14 @@ public class motor_controller : MonoBehaviour
         int layerMask = 1 << 9;
 
         //bottom-left of the screen is (0,0); the right-top is (pixelWidth -1,pixelHeight -1).
-        int w = Projector.pixelWidth - 1;
-        int h = Projector.pixelHeight - 1;
+        int w = Projector_cam.pixelWidth - 1;
+        int h = Projector_cam.pixelHeight - 1;
 
         Vector3[] Projecting_points = new Vector3[4];
         int Projecting_points_num = 0;
 
         RaycastHit hit;
-        Ray ray = Projector.ScreenPointToRay(new Vector3(0, 0, 0));
+        Ray ray = Projector_cam.ScreenPointToRay(new Vector3(0, 0, 0));
         // do we hit our portal plane?
         if (Physics.Raycast(ray, out hit, 10f, layerMask)) 
         {
@@ -149,21 +266,21 @@ public class motor_controller : MonoBehaviour
             Projecting_points_num = Projecting_points_num + 1;
         }
 
-        ray = Projector.ScreenPointToRay(new Vector3(0, h, 0));
+        ray = Projector_cam.ScreenPointToRay(new Vector3(0, h, 0));
         if (Physics.Raycast(ray, out hit, 10f, layerMask)) 
         {
             Projecting_points[Projecting_points_num] = hit.point;
             Projecting_points_num = Projecting_points_num + 1;
         }
 
-        ray = Projector.ScreenPointToRay(new Vector3(w, h, 0));
+        ray = Projector_cam.ScreenPointToRay(new Vector3(w, h, 0));
         if (Physics.Raycast(ray, out hit, 10f, layerMask)) 
         {
             Projecting_points[Projecting_points_num] = hit.point;
             Projecting_points_num = Projecting_points_num + 1;
         }
 
-        ray = Projector.ScreenPointToRay(new Vector3(w, 0, 0));
+        ray = Projector_cam.ScreenPointToRay(new Vector3(w, 0, 0));
         if (Physics.Raycast(ray, out hit, 10f, layerMask)) 
         {
             Projecting_points[Projecting_points_num] = hit.point;
