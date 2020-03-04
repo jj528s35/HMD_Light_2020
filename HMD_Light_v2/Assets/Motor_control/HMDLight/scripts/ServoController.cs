@@ -257,9 +257,13 @@ public class ServoController : UniOSCEventDispatcher
 		SendSingal();
 	}
 
-	public void motor_singal()
+	public void motor_singal(int pos, int speed)
 	{
-		if(pitchPos > minPitchPos && pitchPos < maxPitchPos)
+		if(pos > minPitchPos && pos < maxPitchPos)
+		{
+			pitchPos = pos;
+			pitchSpeed = speed;
 			SendSingal();
+		}
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Kalman;
 
 public class motor_controller : MonoBehaviour
 {
@@ -11,11 +12,12 @@ public class motor_controller : MonoBehaviour
     public Vector3 rot_vector; //旋轉軸心
     public float angle, diff_angle;
     public ServoController servo;
-    private float servo2angle, init_angle;
-    private Vector3 init_rot_x, init_forward;
-    public GameObject Projector;
-    public GameObject zed;
-    private Vector3 zed_rot;
+    private float servo2angle, init_angle, angle2servo;
+    private int c = 0;
+     public GameObject HMD;
+     //public GameObject debug,debug1;
+     IKalmanWrapper kalman;
+
     [Header("Fake Motor rotation")]
     public Camera f_Projector;
     public GameObject f_motor;
@@ -32,16 +34,20 @@ public class motor_controller : MonoBehaviour
     public Camera Projector_cam;
     public GameObject Projector_area;
 
+    void Awake ()
+	{
+		kalman = new MatrixKalmanWrapper ();
+	}
 
     // Start is called before the first frame update
     void Start()
     {
         m_rot.transform.position = motor.transform.position + rot_vector * 0.05f;//for visual
         servo2angle = 1024f/360f;
+        angle2servo = 360f/1024f;
 
         //init the motor angle
-        servo.pitchPos = inti_sevoAngle;
-        servo.motor_singal();
+        servo.motor_singal(inti_sevoAngle, 100);
         init_angle = (1000 - inti_sevoAngle)/servo2angle;
         angle = init_angle;
         motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
@@ -56,29 +62,16 @@ public class motor_controller : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        c = c + 1;
         //motor_control(init_rot_x);
-         motor_angle();
+        //if(Input.GetKeyDown(KeyCode.Space))
+
+        motor_angle();
+        //motor.transform.localRotation = Quaternion.Slerp(motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.2f);
+        //f_motor.transform.localRotation = Quaternion.Slerp(f_motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.2f);
         
         //show Projecting_area
         Projecting_area();
-
-
-
-        
-        /*if(Input.GetKeyDown(KeyCode.Space))
-        {
-            //set init value
-            servo.pitchPos = inti_sevoAngle;
-            servo.motor_singal();
-            init_angle = (1000 - inti_sevoAngle)/servo2angle;
-            angle = init_angle;
-            motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
-
-            init_rot_x = Projector.transform.rotation.eulerAngles;
-            zed_rot = zed.transform.rotation.eulerAngles;
-        }*/
-
         
     }
 
@@ -95,13 +88,14 @@ public class motor_controller : MonoBehaviour
 
     public void motor_angle()
     {
-        float theta = 1;
+        f_motor.transform.localRotation = motor.transform.localRotation;
+        float theta = 0;
         bool first = true;
         int w = Projector_cam.pixelWidth;
         int h = Projector_cam.pixelHeight;
         
         // only hit the floor
-        int layerMask = 1 << 9;
+        int layerMask = 1 << 9 | 1 << 10;
 
         bool sameDirection = true;
         float Rot_down = 1;
@@ -117,50 +111,119 @@ public class motor_controller : MonoBehaviour
             float new_dist = dist;
             float ori_dist = dist;//for debug
 
-            float dot = Vector3.Dot( dir, plane.transform.forward );
-            sameDirection = dot >= 0; 
-            if(sameDirection) Rot_down = 1; // same as forward dir(blue axix) => rotation down
+            //float dot = Vector3.Dot( dir, plane.transform.forward );
+            //sameDirection = dot >= 0; 
+
+            //
+            Vector3 dir_1 = plane.transform.position - hit.point;
+            Vector3 HMD_floor = HMD.transform.position;
+            HMD_floor[2] = 0;
+            Vector3 dir_2 = HMD_floor - hit.point;
+            float dir_angle = Vector3.Angle(dir_2, dir_1);
+
+
+            //if(sameDirection) Rot_down = 1; // same as forward dir(blue axix) => rotation down
+            if(dir_angle < 90) Rot_down = 1; // same as forward dir(blue axix) => rotation down
             else Rot_down = -1;
 
-            while(new_dist <= dist && (first ||(dist - new_dist) >= 0.01f))
+            while(first || (new_dist <= dist))//0.01f && (dist - new_dist) >= 0.001f
             {
                 first = false;
+                theta = theta + 1;
                 dist = new_dist;
+                rot_angle = theta * Rot_down;// * angle2servo;
+                
+                f_motor.transform.localRotation = Quaternion.AngleAxis(angle + rot_angle, rot_vector);
+                
+                ray = f_Projector.ScreenPointToRay(new Vector3(w/2, h/2, 0));
+                if (Physics.Raycast(ray, out hit, 10f, layerMask))
+                {
+                    new_dist = Vector3.Distance(hit.point, plane.transform.position);
+                } 
+                else break;
+
+            }
+
+            
+            /*Vector3 new_dir = dir;
+            sameDirection = true;
+            while(sameDirection)//0.01f
+            {
+                first = false;
+                theta++;
+                //dir = new_dir;
                 rot_angle = theta * Rot_down;
+                
                 
                 f_motor.transform.localRotation = Quaternion.AngleAxis(angle + rot_angle, rot_vector);
 
                 ray = f_Projector.ScreenPointToRay(new Vector3(w/2, h/2, 0));
                 if (Physics.Raycast(ray, out hit, 10f, layerMask))
                 {
-                    new_dist = Vector3.Distance(hit.point, plane.transform.position);
-                    //print(dist-new_dist);
+                    new_dir = hit.point - plane.transform.position;
+
+                    float dot = Vector3.Dot( new_dir, dir );
+                    sameDirection = dot >= 0; 
+                    //print(sameDirection);
                 } 
                 else break;
 
-                theta++;              
-            }
+                              
+            }*/
 
-            if(ori_dist - dist > 0.05f)
+            if(theta-1 >= 1)//0.03f
             {
-                print(ori_dist-dist);
-                rot_angle = (theta-1) * Rot_down;
-                print(angle+" "+rot_angle);
+                //print(ori_dist-dist);
+                //print(dir_angle);
+                rot_angle = (theta-1) * Rot_down;// * angle2servo;
+                print(rot_angle);
+                //print("sevo : " + (servo.pitchPos - (int)(1000 - (angle + rot_angle) * servo2angle)));
                 angle = angle + rot_angle;
+
                 motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
                 f_motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
-                servo.pitchPos = (int)(1000 - angle * servo2angle);
-                servo.motor_singal();
+                int rot_speed = (int)speed(rot_angle);
+                //print("speed: "+ rot_speed);
+                servo.motor_singal((int)(1000 - angle * servo2angle), rot_speed);
+
+                /*motor.transform.localRotation = Quaternion.Slerp(motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.35f);
+                f_motor.transform.localRotation = Quaternion.Slerp(f_motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.35f);
+
+                float motor_current_angle = motor.transform.localRotation.eulerAngles[0];
+                if(motor_current_angle > 360f) motor_current_angle = motor_current_angle % 360;
+                print("sevo : " + (servo.pitchPos - (int)(1000 - motor_current_angle * servo2angle)));
+                servo.motor_singal((int)(1000 - motor.transform.localRotation.eulerAngles[0] * servo2angle), 100);*/
+
+
+                /*motor.transform.localRotation = Quaternion.Slerp(motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.35f);
+                f_motor.transform.localRotation = Quaternion.Slerp(f_motor.transform.localRotation, Quaternion.AngleAxis(angle, rot_vector), 0.35f);
+                servo.motor_singal((int)(1000 - angle * servo2angle), 100);*/
             }
-            else f_motor.transform.localRotation = Quaternion.AngleAxis(angle, rot_vector);
-            
-            
-            
+            else 
+            {
+                f_motor.transform.localRotation = motor.transform.localRotation;
+            }
+  
         }
         else 
             return;
     }
 
+    public float speed(float rot_angle)
+    {
+        float maxspeed = 100f;
+        float minspeed = 20f;
+        float max_min_angle = 20;
+        float ratio = rot_angle/max_min_angle;
+        if(ratio < 0) ratio = -ratio;
+        if(ratio > 1) ratio = 1;
+
+        float rot_speed = minspeed + (maxspeed - minspeed)*ratio;
+
+        return rot_speed;
+    }
+
+/*
     public void motor_control(Vector3 init_rot_x)
     {
         //print(init_rot_x + " " + Projector.transform.rotation.eulerAngles);
@@ -200,7 +263,7 @@ public class motor_controller : MonoBehaviour
 
         /*if(Mathf.Abs(zangleDiff)<1) 
             Angle_Diff = 0;
-        else zed_rot = zrot_x;*/
+        else zed_rot = zrot_x;/*
 
         diff_angle = Angle_Diff;
         print(angle);
@@ -217,7 +280,7 @@ public class motor_controller : MonoBehaviour
         print(init_rot_x[0] + " " + rot_x[0] + " " + Angle_Diff + " " + angleDiff + " " +  Projector.transform.rotation.eulerAngles[0]);
         
         zed_rot = zrot_x;
-    }
+    }*/
 
     
 

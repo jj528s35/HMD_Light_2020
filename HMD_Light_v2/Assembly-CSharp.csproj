@@ -380,6 +380,7 @@
      <Compile Include="Assets\Oculus\Spatializer\scripts\ONSPVersion.cs" />
      <Compile Include="Assets\Oculus\Spatializer\scripts\OculusSpatializerUnity.cs" />
      <Compile Include="Assets\Oculus\Spatializer\scripts\helpers\ONSPReflectionZone.cs" />
+     <Compile Include="Assets\Scripts\Test.cs" />
      <Compile Include="Assets\UniOSC\Scripts\ClassBased\Demo\UniOSCClassBasedDemo.cs" />
      <Compile Include="Assets\UniOSC\Scripts\ClassBased\Example.Classes\UniOSCEventDispatcherCBImplementation.cs" />
      <Compile Include="Assets\UniOSC\Scripts\ClassBased\Example.Classes\UniOSCEventDispatcherCBRawImplementation.cs" />
@@ -1144,6 +1145,10 @@
  </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
+      <Project>{60e564b9-a9c6-f9ea-0dcb-2100606c7803}</Project>
+      <Name>Assembly-CSharp-firstpass</Name>
+    </ProjectReference>
     <ProjectReference Include="Unity.Timeline.Editor.csproj">
       <Project>{f5748c1d-def5-ae4d-2fdc-bb4213b75e38}</Project>
       <Name>Unity.Timeline.Editor</Name>
