@@ -35,7 +35,7 @@ public class motor_controller : MonoBehaviour
     [Header("Projecting area")]
     public Camera Projector_cam;
     public GameObject Projector_area;
-    private Vector3[] Projecting_area_points = new Vector3[4];
+    public Vector3[] Projecting_area_points = new Vector3[4];
     
     [Header("Projecting range")]
     public GameObject dist_from_user, Projector_range;

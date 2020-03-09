@@ -1336,6 +1336,7 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
+  plane: {fileID: 1025442005}
 --- !u!1 &738252976
 GameObject:
   m_ObjectHideFlags: 0

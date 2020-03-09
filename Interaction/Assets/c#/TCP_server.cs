@@ -24,6 +24,7 @@ public class TCP_server : MonoBehaviour
     [Header("socket send")]
     public int fps = 45;
     public Vector3[] window_corner = new Vector3[4];
+    public GameObject plane;
     private int count = 0;
     private bool Close_CLient = false;
 
@@ -72,6 +73,7 @@ public class TCP_server : MonoBehaviour
 
         if(count % 6 == 0 && Close_CLient == false)
         {
+            //Plane_corner();
             string window_corner_str = "3 " + window_in_depth_camera_coord();
             SendMessage(window_corner_str);
             
@@ -185,12 +187,35 @@ public class TCP_server : MonoBehaviour
         string str = "";
         for(int i = 0 ; i < 4; i++)
         {
-            Plane_corner[i] = Interaction.set_world_to_localpos( motor_control.plane_points[i]);
+            Plane_corner[i] = Interaction.set_world_to_localpos( motor_control.Projecting_area_points[i]);
             str = str + Plane_corner[i][0].ToString() + " " + Plane_corner[i][1].ToString() + " " + Plane_corner[i][2].ToString() + " ";
         }
 
         return str;
         
+    }
+
+    public void Plane_corner()
+    {
+        float y = 0;//Projecting_area_points[0][1];
+
+        GameObject target = new GameObject("corner");
+        target.transform.parent = plane.transform;
+
+        //get position of plane corner
+        target.transform.localPosition = new Vector3(-5,y,5);
+        window_corner[0] = target.transform.position;
+
+        target.transform.localPosition = new Vector3(5,y,5);
+        window_corner[1] = target.transform.position;
+
+        target.transform.localPosition = new Vector3(5,y,-5);
+        window_corner[2] = target.transform.position;
+
+        target.transform.localPosition = new Vector3(-5,y,-5);
+        window_corner[3] = target.transform.position;
+
+        Destroy(target);
     }
 
 }
